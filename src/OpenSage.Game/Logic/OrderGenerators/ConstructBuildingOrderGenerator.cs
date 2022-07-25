@@ -101,6 +101,7 @@ namespace OpenSage.Logic.OrderGenerators
             scene.Audio.PlayAudioEvent(dozer, dozer.Definition.UnitSpecificSounds?["VoiceCreate"]?.Value);
 
             var playerIdx = scene.GetPlayerIndex(player);
+            // TODO_RM move to outer edge defined by _buildingDefinition.Geometry.
             var moveOrder = Order.CreateMoveOrder(playerIdx, _position);
             var buildOrder = Order.CreateBuildObject(playerIdx, _definitionIndex, _position, _angle);
 
