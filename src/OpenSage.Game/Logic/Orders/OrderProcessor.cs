@@ -106,7 +106,11 @@ namespace OpenSage.Logic.Orders
                             var gameObject = _game.Scene3D.GameObjects.Add(objectDefinition, player);
                             gameObject.Owner = player;
                             gameObject.UpdateTransform(position.Vector, Quaternion.CreateFromAxisAngle(Vector3.UnitZ, angle));
-                            gameObject.StartConstruction();
+
+                            gameObject.PrepareConstruction();
+
+                            var dozer = player.SelectedUnits.SingleOrDefault(u => u.Definition.KindOf.Get(ObjectKinds.Dozer));
+                            (dozer?.AIUpdate as IBuilderAIUpdate)?.SetBuildTarget(gameObject); // todo: I don't love this cast; it would be nice to get rid of it
                         }
                         break;
                     case OrderType.CancelBuild:
@@ -211,7 +215,6 @@ namespace OpenSage.Logic.Orders
                         break;
 
                     case OrderType.SetSelection:
-                        // TODO: First argument is an unknown boolean.
                         try
                         {
                             var objectIds = order.Arguments.Skip(1)
@@ -219,7 +222,7 @@ namespace OpenSage.Logic.Orders
                                 .Select(_game.Scene3D.GameObjects.GetObjectById)
                                 .ToArray();
 
-                            _game.Selection.SetSelectedObjects(player, objectIds);
+                            _game.Selection.SetSelectedObjects(player, objectIds, order.Arguments[0].Value.Boolean);
                         }
                         catch (Exception e)
                         {
