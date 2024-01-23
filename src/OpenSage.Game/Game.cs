@@ -787,7 +787,7 @@ namespace OpenSage
             var totalGameTime = MapTime.TotalTime;
             _nextLogicUpdate = totalGameTime;
             _nextScriptingUpdate = totalGameTime;
-            this.NetworkMessageBuffer.SetStartTime();
+            // this.NetworkMessageBuffer.SetStartTime();
         }
 
         public void Update(IEnumerable<InputMessage> messages)
