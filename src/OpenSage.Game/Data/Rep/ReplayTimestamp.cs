@@ -32,4 +32,28 @@ public sealed class ReplayTimestamp
             Millisecond = reader.ReadUInt16()
         };
     }
+
+    internal static ReplayTimestamp FromDateTime(DateTime dt) => new ReplayTimestamp
+    {
+        Year = (ushort)dt.Year,
+        Month = (ushort)dt.Month,
+        DayOfWeek = dt.DayOfWeek,
+        Day = (ushort)dt.Day,
+        Hour = (ushort)dt.Hour,
+        Minute = (ushort)dt.Minute,
+        Second = (ushort)dt.Second,
+        Millisecond = (ushort)dt.Millisecond
+    };
+
+    internal void Write(BinaryWriter writer)
+    {
+        writer.Write(Year);
+        writer.Write(Month);
+        writer.Write((ushort)DayOfWeek);
+        writer.Write(Day);
+        writer.Write(Hour);
+        writer.Write(Minute);
+        writer.Write(Second);
+        writer.Write(Millisecond);
+    }
 }

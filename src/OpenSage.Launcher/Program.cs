@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -30,8 +31,16 @@ public static class Program
         [Option('g', "game", Default = SageGame.CncGenerals, Required = false, HelpText = "Chooses which game to start.")]
         public SageGame Game { get; set; }
 
-        [Option('m', "map", Required = false, HelpText = "Immediately starts a new skirmish with default settings in the specified map. The map file must be specified with the full path.")]
+        [Option('m', "map", Required = false, HelpText = "Immediately starts a new skirmish in the specified map. Use with --players to configure opponents.")]
         public string? Map { get; set; }
+
+        [Option("players", Required = false, Separator = '|',
+            HelpText = "Define players for the skirmish started via --map. Each entry is a '|'-separated player token, " +
+                       "where each token is a comma-separated list of key:value pairs. " +
+                       "Supported keys: faction (e.g. FactionAmerica), owner (Player|EasyAi|MediumAi|HardAi), " +
+                       "color (R.G.B, each 0-255), pos (start position 1-8), team (integer). " +
+                       "Example: --players \"faction:FactionAmerica,owner:Player,color:255.0.0,pos:1,team:0|faction:FactionGLA,owner:HardAi,color:0.255.0,pos:2,team:0\"")]
+        public IEnumerable<string> Players { get; set; } = Enumerable.Empty<string>();
 
         [Option("novsync", Default = false, Required = false, HelpText = "Disable vsync.")]
         public bool DisableVsync { get; set; }
@@ -62,6 +71,12 @@ public static class Program
 
         [Option('u', "uniqueports", Default = false, Required = false, HelpText = "Use a unique port for each client in a multiplayer game. Normally, port 8088 is used, but when we want to run multiple game instances on the same machine (for debugging purposes), each client needs a different port.")]
         public bool UseUniquePorts { get; set; }
+
+        [Option("noaudio", Default = false, Required = false, HelpText = "Disable all audio.")]
+        public bool NoAudio { get; set; }
+
+        [Option("savereplay", Default = null, Required = false, HelpText = "Record the skirmish started via --map and save it to the specified filename inside the game's Replays folder (e.g. --savereplay mymatch.rep).")]
+        public string? SaveReplay { get; set; }
     }
 
     public static void Main(string[] args)
@@ -74,7 +89,66 @@ public static class Program
           .WithParsed(opts => Run(opts));
     }
 
-    private static NLog.Logger Logger = NLog.LogManager.GetCurrentClassLogger();
+    private static readonly NLog.Logger Logger = NLog.LogManager.GetCurrentClassLogger();
+
+    private static readonly PlayerSetting[] DefaultSkirmishPlayers =
+    [
+        new(1, "FactionAmerica", new ColorRgb(255, 0, 0), 0, PlayerOwner.Player, isLocalForMultiplayer: true),
+        new(2, "FactionGLA",     new ColorRgb(0, 255, 0), 0, PlayerOwner.EasyAi),
+    ];
+
+    /// <summary>
+    /// Parses a single --players token such as:
+    ///   faction:FactionAmerica,owner:Player,color:255.0.0,pos:1,team:0
+    /// </summary>
+    private static PlayerSetting ParsePlayerSetting(string token, int fallbackPosition)
+    {
+        var dict = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var part in token.Split(','))
+        {
+            var idx = part.IndexOf(':');
+            if (idx > 0)
+                dict[part[..idx].Trim()] = part[(idx + 1)..].Trim();
+        }
+
+        var faction = dict.TryGetValue("faction", out var f) ? f : "FactionAmerica";
+
+        var owner = PlayerOwner.EasyAi;
+        if (dict.TryGetValue("owner", out var o))
+        {
+            owner = o.ToLowerInvariant() switch
+            {
+                "player"   => PlayerOwner.Player,
+                "easyai"   => PlayerOwner.EasyAi,
+                "mediumai" => PlayerOwner.MediumAi,
+                "hardai"   => PlayerOwner.HardAi,
+                _          => PlayerOwner.EasyAi,
+            };
+        }
+
+        var color = new ColorRgb(255, 255, 255);
+        if (dict.TryGetValue("color", out var c))
+        {
+            var rgb = c.Split('.');
+            if (rgb.Length == 3
+                && byte.TryParse(rgb[0], out var r)
+                && byte.TryParse(rgb[1], out var g)
+                && byte.TryParse(rgb[2], out var b))
+            {
+                color = new ColorRgb(r, g, b);
+            }
+        }
+
+        int? pos = dict.TryGetValue("pos", out var posStr) && int.TryParse(posStr, out var posVal)
+            ? posVal
+            : fallbackPosition;
+
+        int team = dict.TryGetValue("team", out var teamStr) && int.TryParse(teamStr, out var teamVal)
+            ? teamVal
+            : 0;
+
+        return new PlayerSetting(pos, faction, color, team, owner, isLocalForMultiplayer: owner == PlayerOwner.Player);
+    }
 
     private static GameInstallation? GameFromPath(Options opts, SageGame game, string? path)
     {
@@ -145,7 +219,9 @@ public static class Program
         {
             UseRenderDoc = opts.RenderDoc,
             LoadShellMap = !opts.NoShellmap,
-            UseUniquePorts = opts.UseUniquePorts
+            UseUniquePorts = opts.UseUniquePorts,
+            NoAudio = opts.NoAudio,
+            SaveReplayFile = opts.SaveReplay
         };
 
         UPnP.InitializeAsync(TimeSpan.FromSeconds(10)).ContinueWith(_ => Logger.Info($"UPnP status: {UPnP.Status}"));
@@ -203,13 +279,12 @@ public static class Program
                     }
                     else if (mapCache.IsMultiplayer)
                     {
-                        var pSettings = new PlayerSetting[]
-                        {
-                            new(1, "FactionAmerica", new ColorRgb(255, 0, 0), 0, PlayerOwner.Player),
-                            new(2, "FactionGLA", new ColorRgb(0, 255, 0), 0, PlayerOwner.EasyAi),
-                        };
+                        var playerTokens = opts.Players.ToList();
+                        var pSettings = playerTokens.Count > 0
+                            ? playerTokens.Select((t, i) => ParsePlayerSetting(t, i + 1)).ToArray()
+                            : DefaultSkirmishPlayers;
 
-                        Logger.Debug("Starting multiplayer game");
+                        Logger.Debug($"Starting skirmish on {opts.Map} with {pSettings.Length} players");
 
                         game.StartSkirmishOrMultiPlayerGame(opts.Map,
                             new EchoConnection(),

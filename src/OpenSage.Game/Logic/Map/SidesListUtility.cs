@@ -101,7 +101,18 @@ internal static class SidesListUtility
         {
             var playerSetting = playerSettings[i];
 
-            var factionPlayer = originalMapPlayers.FirstOrDefault(x => x.Faction == playerSetting.SideName);
+            // Map player Faction values use a "Faction" prefix (e.g. "FactionAmerica"),
+            // while PlayerSetting.SideName is the bare Side from the PlayerTemplate (e.g. "America").
+            var factionPlayer = originalMapPlayers.FirstOrDefault(x =>
+                x.Faction == playerSetting.SideName ||
+                x.Faction == "Faction" + playerSetting.SideName);
+
+            if (factionPlayer == null)
+            {
+                throw new InvalidOperationException(
+                    $"No map player found for faction '{playerSetting.SideName}'. " +
+                    $"Available factions: {string.Join(", ", originalMapPlayers.Select(p => p.Faction))}");
+            }
 
             var isHuman = playerSetting.Owner == PlayerOwner.Player;
 

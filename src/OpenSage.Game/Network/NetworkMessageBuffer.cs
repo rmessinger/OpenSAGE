@@ -1,5 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using OpenSage.Data.Rep;
 using OpenSage.Logic.Orders;
 
 namespace OpenSage.Network;
@@ -14,8 +17,10 @@ public sealed class NetworkMessageBuffer : DisposableBase
     private List<Order> _localOrders;
     private uint _netFrameNumber;
 
-    //TODO: use this for generating a replay file later on
     public Dictionary<uint, List<Order>> FrameOrders { get; }
+
+    /// <summary>The last frame number processed by <see cref="Tick"/>.</summary>
+    public uint CurrentFrame => _netFrameNumber;
 
     public NetworkMessageBuffer(IGame game, IConnection connection)
     {
@@ -62,5 +67,24 @@ public sealed class NetworkMessageBuffer : DisposableBase
         }
 
         _netFrameNumber++;
+    }
+
+    /// <summary>
+    /// Saves all recorded orders to a <c>.rep</c> file at <paramref name="outputPath"/>.
+    /// The directory is created if it does not exist.
+    /// </summary>
+    public void SaveReplay(string outputPath, ReplayHeader header)
+    {
+        Directory.CreateDirectory(Path.GetDirectoryName(outputPath)!);
+
+        // Flatten FrameOrders into an ordered sequence of (frame, order) pairs
+        var orderedFrames = FrameOrders
+            .OrderBy(kvp => kvp.Key)
+            .SelectMany(kvp => kvp.Value.Select(o => (frame: kvp.Key, order: o)));
+
+        using var stream = File.Create(outputPath);
+        ReplayFile.Write(stream, header, orderedFrames);
+
+        Logger.Info($"Replay saved to {outputPath}");
     }
 }

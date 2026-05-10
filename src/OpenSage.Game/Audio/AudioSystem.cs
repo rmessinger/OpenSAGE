@@ -67,21 +67,23 @@ public sealed class AudioSystem : GameSystem
 
     private void CreateSubmixers()
     {
+        var noAudio = Game.Configuration.NoAudio;
+
         // Create all available mixers
         _mixers[AudioVolumeSlider.SoundFX] = _engine.CreateSubmixer();
-        _mixers[AudioVolumeSlider.SoundFX].Volume = (float)_settings.DefaultSoundVolume;
+        _mixers[AudioVolumeSlider.SoundFX].Volume = noAudio ? 0f : (float)_settings.DefaultSoundVolume;
 
         _mixers[AudioVolumeSlider.Music] = _engine.CreateSubmixer();
-        _mixers[AudioVolumeSlider.Music].Volume = (float)_settings.DefaultMusicVolume;
+        _mixers[AudioVolumeSlider.Music].Volume = noAudio ? 0f : (float)_settings.DefaultMusicVolume;
 
         _mixers[AudioVolumeSlider.Ambient] = _engine.CreateSubmixer();
-        _mixers[AudioVolumeSlider.Ambient].Volume = (float)_settings.DefaultAmbientVolume;
+        _mixers[AudioVolumeSlider.Ambient].Volume = noAudio ? 0f : (float)_settings.DefaultAmbientVolume;
 
         _mixers[AudioVolumeSlider.Voice] = _engine.CreateSubmixer();
-        _mixers[AudioVolumeSlider.Voice].Volume = (float)_settings.DefaultVoiceVolume;
+        _mixers[AudioVolumeSlider.Voice].Volume = noAudio ? 0f : (float)_settings.DefaultVoiceVolume;
 
         _mixers[AudioVolumeSlider.Movie] = _engine.CreateSubmixer();
-        _mixers[AudioVolumeSlider.Movie].Volume = (float)_settings.DefaultMovieVolume;
+        _mixers[AudioVolumeSlider.Movie].Volume = noAudio ? 0f : (float)_settings.DefaultMovieVolume;
     }
 
     protected override void Dispose(bool disposeManagedResources)

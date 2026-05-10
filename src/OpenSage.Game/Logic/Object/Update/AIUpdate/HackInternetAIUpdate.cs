@@ -18,8 +18,6 @@ public class HackInternetAIUpdate : AIUpdate
         ModuleData = moduleData;
     }
 
-    private protected override HackInternetAIUpdateStateMachine CreateStateMachine() => new(GameObject, GameEngine, this);
-
     public override UpdateSleepTime Update()
     {
         // Have to call our parent's IsIdle, because we override it to never

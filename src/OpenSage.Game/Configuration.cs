@@ -20,4 +20,15 @@ public sealed class Configuration
     ///   <c>true</c> if [use unique ports]; otherwise, <c>false</c>.
     /// </value>
     public bool UseUniquePorts { get; set; } = false;
+
+    /// <summary>
+    /// When <c>true</c>, all audio submixer volumes are set to zero at startup.
+    /// </summary>
+    public bool NoAudio { get; set; } = false;
+
+    /// <summary>
+    /// When set, the skirmish match started via the launcher is recorded and saved
+    /// to this filename inside the game's <c>Replays</c> user-data folder.
+    /// </summary>
+    public string SaveReplayFile { get; set; } = null;
 }

@@ -130,6 +130,7 @@ public class AIUpdate : UpdateModule
 
         _locomotorSet = new LocomotorSet(gameObject, gameEngine);
         _currentLocomotorSetType = LocomotorSetType.Invalid;
+        // StateMachine.InitializeDefaultState();
 
         SetLocomotor(LocomotorSetType.Normal);
 

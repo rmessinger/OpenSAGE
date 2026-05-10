@@ -97,7 +97,7 @@ public sealed class Waypoint
 
     public IEnumerable<string> PathLabels { get; }
 
-    internal Waypoint(MapObject mapObject)
+    public Waypoint(MapObject mapObject)
     {
         ID = (int)mapObject.Properties["waypointID"].Value;
         Name = (string)mapObject.Properties["waypointName"].Value;

@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>OpenSAGE – Attack Damage Sequence Diagram</title>
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+  <style>
+    body {
+      background: #1e1e2e;
+      color: #cdd6f4;
+      font-family: 'Segoe UI', sans-serif;
+      margin: 0;
+      padding: 16px;
+    }
+    h1 {
+      text-align: center;
+      font-size: 1.4rem;
+      margin-bottom: 8px;
+      color: #cba6f7;
+    }
+    p.subtitle {
+      text-align: center;
+      font-size: 0.85rem;
+      color: #a6adc8;
+      margin-bottom: 16px;
+    }
+
+    /* ── zoom / pan wrapper ── */
+    #diagram-container {
+      overflow: auto;
+      border: 1px solid #45475a;
+      border-radius: 8px;
+      background: #181825;
+      padding: 24px;
+      cursor: grab;
+      user-select: none;
+    }
+    #diagram-container:active { cursor: grabbing; }
+
+    #diagram-inner {
+      transform-origin: top left;
+      transition: transform 0.1s ease;
+      /* initial scale – tweak if you want it bigger/smaller on first load */
+      transform: scale(1);
+      display: inline-block;
+      min-width: max-content;
+    }
+
+    .controls {
+      display: flex;
+      gap: 8px;
+      justify-content: center;
+      margin-bottom: 10px;
+    }
+    .controls button {
+      background: #313244;
+      color: #cdd6f4;
+      border: 1px solid #585b70;
+      border-radius: 6px;
+      padding: 6px 18px;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    .controls button:hover { background: #45475a; }
+  </style>
+</head>
+<body>
+
+<h1>OpenSAGE – Attack Damage Flow</h1>
+<p class="subtitle">
+  Scroll to zoom &nbsp;|&nbsp; Click-drag to pan &nbsp;|&nbsp; Use buttons below to reset zoom
+</p>
+
+<div class="controls">
+  <button onclick="zoom(1.25)">＋ Zoom In</button>
+  <button onclick="zoom(0.8)">－ Zoom Out</button>
+  <button onclick="resetZoom()">⟳ Reset</button>
+</div>
+
+<div id="diagram-container">
+  <div id="diagram-inner">
+    <div class="mermaid">
+sequenceDiagram
+    participant Player  as Player
+    participant OP      as OrderProcessor
+    participant AIU     as AIUpdate
+    participant WSM     as WeaponStateMachine
+    participant PreAtk  as PreAttackState
+    participant Firing  as FiringState
+    participant Nugget  as WeaponEffectNugget
+    participant WT      as WeaponTarget
+    participant Proj    as Projectile
+    participant BPB     as BezierProjectileBehavior
+    participant DefGO   as TargetGameObject
+    participant Body    as ActiveBody
+    participant Armor   as Armor
+    participant DmgMod  as IDamageModules
+
+    rect rgb(40,40,70)
+        Note over Player,OP: Phase 1 - Order Dispatch
+        Player->>OP: Process(Order AttackObject targetObjectId)
+        OP->>AIU: SetWeaponTarget(targetObject, CommandSourceType)
+    end
+
+    rect rgb(40,55,40)
+        Note over AIU,WSM: Phase 2 - Weapon Arming
+        AIU->>AIU: ChooseBestWeapon(target)
+        AIU->>WSM: Weapon.SetTarget(WeaponTarget)
+        Note right of WSM: WeaponTarget wraps target ObjectId or world position
+    end
+
+    rect rgb(55,40,40)
+        Note over AIU,Firing: Phase 3 - State-Machine Tick (every logic frame)
+        AIU->>WSM: Weapon.LogicTick()
+        WSM->>WSM: Update() - evaluate transitions
+        alt [Inactive] new target assigned
+            WSM->>PreAtk: TransitionToState(PreAttack)
+            PreAtk->>PreAtk: OnEnterStateImpl() - wait PreAttackDelay
+        else [PreAttack] delay elapsed and target in range
+            PreAtk->>WSM: GetNextState() returns Firing
+            WSM->>Firing: TransitionToState(Firing)
+        end
+    end
+
+    rect rgb(70,50,20)
+        Note over Firing,Nugget: Phase 4 - Weapon Fired
+        Firing->>Firing: OnEnterStateImpl()
+        Firing->>Firing: Decrement CurrentRounds if clip-based
+        Firing->>Firing: PlayAudioEvent(FireSound)
+        Firing->>Firing: TriggerWeaponFireFX() - muzzle flash, FX bones
+        loop For each nugget in Template.Nuggets
+            Firing->>Nugget: nugget.Execute(WeaponEffectExecutionContext)
+        end
+    end
+
+    rect rgb(20,55,70)
+        Note over Nugget,DefGO: Path A - Direct Damage (DamageNugget)
+        Nugget->>WT: CurrentTarget.DoDamage(DamageType, Amount, DeathType, attacker)
+        WT->>DefGO: GetTargetObject().AttemptDamage(DamageInfoInput)
+    end
+
+    rect rgb(55,20,70)
+        Note over Nugget,Proj: Path B - Projectile Spawn (ProjectileNugget)
+        Nugget->>Proj: GameLogic.CreateObject(ProjectileTemplate, owner)
+        Nugget->>Proj: SetTransformMatrix(launchBoneTransform)
+        Nugget->>Proj: SetWarhead(warheadTemplate)
+        Nugget->>Proj: CurrentWeapon.SetTarget(parentTarget)
+        Nugget->>Proj: Speed = WeaponSpeed
+    end
+
+    rect rgb(65,30,70)
+        Note over Proj,DefGO: Path B continued - Projectile Flight and Detonation
+        loop Every logic frame while projectile is alive
+            Proj->>BPB: Update()
+            BPB->>BPB: Translate position by velocity x delta-t
+            BPB->>BPB: CheckForHit()
+        end
+        Note over BPB,Proj: On hit - Detonate()
+        BPB->>Proj: CurrentWeapon.SetTarget(impactTarget)
+        BPB->>Proj: CurrentWeapon.Fire()
+        Proj->>WSM: TransitionToState(Firing)
+        WSM->>Firing: OnEnterStateImpl()
+        Firing->>Nugget: DamageNugget.Execute(context)
+        Nugget->>WT: CurrentTarget.DoDamage(DamageType, Amount, DeathType, attacker)
+        WT->>DefGO: GetTargetObject().AttemptDamage(DamageInfoInput)
+        BPB->>Proj: Kill(DeathType.Detonated) or Destroy()
+    end
+
+    rect rgb(20,60,50)
+        Note over DefGO,DmgMod: Phase 6 - Damage Resolution (ActiveBody.AttemptDamage)
+        DefGO->>Body: BodyModule.AttemptDamage(DamageInfoInput)
+        Body->>Body: Guard - return early if indestructible or already dead
+        Body->>Body: ValidateArmorAndDamageFX()
+        Body->>Armor: AdjustDamage(DamageType, RawAmount)
+        Armor-->>Body: scaledAmount after armor reduction
+        Body->>Body: Multiply by DamageScalar (strategy-center bonuses etc.)
+        Body->>Body: InternalChangeHealth(-scaledAmount)
+        Note right of Body: _currentHealth decremented, clamped to 0..maxHealth
+        Body->>Body: SetLastDamageInfo(currentDamageInfo)
+        Body->>Body: Owner.SetAttackedBy(attacker.Owner)
+        Body->>DmgMod: module.OnDamage(damageInfo) for each IDamageModule
+        alt damage state changed (Pristine to Damaged to ReallyDamaged)
+            Body->>DmgMod: module.OnBodyDamageStateChange(old, new)
+            Body->>Body: PlayAudioEvent(SoundOnDamaged or SoundOnReallyDamaged)
+        end
+        Body->>Body: DoDamageFX() - visual and audio hit effects
+        alt health crossed below 25%
+            Body->>Body: 25% chance PlayAudioEvent(VoiceFear)
+        end
+        alt health reached zero
+            Body->>Body: damager.ScoreTheKill(targetObj)
+            Body->>DefGO: obj.OnDie(damageInput)
+            Note right of DefGO: Death animation, debris FX, score, object removal
+        end
+        Body-->>DefGO: DamageInfoOutput with ActualDamageDealt and ActualDamageClipped
+    end
+    </div>
+  </div>
+</div>
+
+<script>
+  mermaid.initialize({
+    startOnLoad: true,
+    theme: 'dark',
+    sequence: {
+      diagramMarginX: 40,
+      diagramMarginY: 20,
+      actorMargin: 60,
+      width: 180,
+      height: 50,
+      boxMargin: 10,
+      boxTextMargin: 5,
+      noteMargin: 10,
+      messageMargin: 35,
+      mirrorActors: true,
+      useMaxWidth: false,
+      wrap: false,
+    }
+  });
+
+  // ── zoom state ──────────────────────────────────────────────
+  let scale = 1.0;
+  const inner = document.getElementById('diagram-inner');
+
+  function zoom(factor) {
+    scale = Math.min(Math.max(scale * factor, 0.2), 5);
+    applyScale();
+  }
+  function resetZoom() {
+    scale = 1.0;
+    applyScale();
+  }
+  function applyScale() {
+    inner.style.transform = `scale(${scale})`;
+  }
+
+  // wheel zoom
+  document.getElementById('diagram-container').addEventListener('wheel', (e) => {
+    e.preventDefault();
+    zoom(e.deltaY < 0 ? 1.1 : 0.9);
+  }, { passive: false });
+
+  // ── click-drag pan ───────────────────────────────────────────
+  const container = document.getElementById('diagram-container');
+  let isDragging = false, startX, startY, scrollLeft, scrollTop;
+
+  container.addEventListener('mousedown', (e) => {
+    isDragging = true;
+    startX = e.pageX - container.offsetLeft;
+    startY = e.pageY - container.offsetTop;
+    scrollLeft = container.scrollLeft;
+    scrollTop  = container.scrollTop;
+  });
+  container.addEventListener('mouseleave', () => isDragging = false);
+  container.addEventListener('mouseup',    () => isDragging = false);
+  container.addEventListener('mousemove',  (e) => {
+    if (!isDragging) return;
+    e.preventDefault();
+    const x = e.pageX - container.offsetLeft;
+    const y = e.pageY - container.offsetTop;
+    container.scrollLeft = scrollLeft - (x - startX);
+    container.scrollTop  = scrollTop  - (y - startY);
+  });
+</script>
+</body>
+</html>

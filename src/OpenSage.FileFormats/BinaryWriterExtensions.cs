@@ -445,6 +445,21 @@ public static class BinaryWriterExtensions
         writer.Write('\0');
     }
 
+    /// <summary>
+    /// Writes a null-terminated string using the <see cref="BinaryWriter"/>'s own encoding
+    /// (typically UTF-16 LE when the writer is constructed with <see cref="Encoding.Unicode"/>).
+    /// Each character — including the null terminator — is written as a full encoded char,
+    /// matching <see cref="BinaryReaderExtensions.ReadNullTerminatedString"/>.
+    /// </summary>
+    public static void WriteNullTerminatedUnicodeString(this BinaryWriter writer, in string content)
+    {
+        foreach (var c in content)
+        {
+            writer.Write(c);
+        }
+        writer.Write('\0');
+    }
+
     public static void WriteBigEndianUInt32(this BinaryWriter writer, uint num)
     {
         var array = BitConverter.GetBytes(num);

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.IO;
+using System.Text;
 using OpenSage.Data.Utilities.Extensions;
 using OpenSage.FileFormats;
 using OpenSage.Network;
@@ -26,6 +27,26 @@ public sealed class ReplayMetadata
 
     public ReplaySlot[] Slots { get; private set; }
 
+    public static ReplayMetadata Create(
+        string mapFile,
+        int mapCrc,
+        int mapSize,
+        int seed,
+        int startingCredits,
+        ReplaySlot[] slots) => new ReplayMetadata
+    {
+        MapFileUnknownInt = 0,
+        MapFile = mapFile,
+        MapCrc = mapCrc,
+        MapSize = mapSize,
+        SD = seed,
+        C = 0,
+        SR = 0,
+        StartingCredits = startingCredits,
+        O = string.Empty,
+        Slots = slots
+    };
+
     internal static ReplayMetadata Parse(BinaryReader reader)
     {
         var raw = reader.ReadNullTerminatedAsciiString();
@@ -35,7 +56,10 @@ public sealed class ReplayMetadata
 
         foreach (var rawEntry in rawSplit)
         {
-            var keyValue = rawEntry.Split('=');
+            var keyValue = rawEntry.Split(new[] { '=' }, 2);
+
+            if (keyValue.Length < 2 || string.IsNullOrEmpty(keyValue[0]))
+                continue;
 
             switch (keyValue[0])
             {
@@ -86,11 +110,45 @@ public sealed class ReplayMetadata
                     break;
 
                 default:
-                    throw new NotImplementedException($"Unexpected replay metadata key: '{keyValue[0]}'.");
+                    // Unknown keys are silently skipped — replay files from different
+                    // game versions may contain keys this parser does not recognise.
+                    break;
             }
         }
 
         return result;
+    }
+
+    internal void Write(BinaryWriter writer)
+    {
+        var sb = new StringBuilder();
+
+        sb.Append($"M={MapFileUnknownInt:D2}{MapFile};");
+        sb.Append($"MC={MapCrc:X};");
+        sb.Append($"MS={MapSize};");
+        sb.Append($"SD={SD};");
+        sb.Append($"C={C};");
+        sb.Append($"SR={SR};");
+        sb.Append($"SC={StartingCredits};");
+        if (!string.IsNullOrEmpty(O))
+        {
+            sb.Append($"O={O};");
+        }
+
+        if (Slots != null && Slots.Length > 0)
+        {
+            sb.Append("S=");
+            foreach (var slot in Slots)
+            {
+                sb.Append(slot.Encode());
+                sb.Append(':');
+            }
+            sb.Append(';');
+        }
+
+        var bytes = Encoding.ASCII.GetBytes(sb.ToString());
+        writer.Write(bytes);
+        writer.Write((byte)0); // null terminator
     }
 }
 
@@ -105,6 +163,30 @@ public sealed class ReplaySlot
     public int Faction { get; private set; }
     public int StartPosition { get; private set; }
     public int Team { get; private set; }
+
+    public static ReplaySlot CreateHuman(string name, sbyte color, int faction, int startPosition, int team) =>
+        new ReplaySlot
+        {
+            SlotType = ReplaySlotType.Human,
+            HumanName = name,
+            Color = color,
+            Faction = faction,
+            StartPosition = startPosition,
+            Team = team
+        };
+
+    public static ReplaySlot CreateComputer(ReplaySlotDifficulty difficulty, sbyte color, int faction, int startPosition, int team) =>
+        new ReplaySlot
+        {
+            SlotType = ReplaySlotType.Computer,
+            ComputerDifficulty = difficulty,
+            Color = color,
+            Faction = faction,
+            StartPosition = startPosition,
+            Team = team
+        };
+
+    public static ReplaySlot CreateEmpty() => new ReplaySlot { SlotType = ReplaySlotType.Empty };
 
     // HDESKTOP-J8EU7T4,0,0,TT,-1,2,-1,-1,1:
     // CH,-1,-1,-1,-1:
@@ -179,6 +261,28 @@ public sealed class ReplaySlot
 
         return result;
     }
+
+    internal string Encode()
+    {
+        return SlotType switch
+        {
+            ReplaySlotType.Human =>
+                // H<name>,0,0,TT,<color>,<faction>,<startpos>,<team>,1
+                $"H{HumanName},0,0,TT,{Color},{Faction},{StartPosition},{Team},1",
+            ReplaySlotType.Computer =>
+                // C<diff>,<color>,<faction>,<startpos>,<team>
+                $"C{DifficultyChar()},{Color},{Faction},{StartPosition},{Team}",
+            _ => "X"
+        };
+    }
+
+    private char DifficultyChar() => ComputerDifficulty switch
+    {
+        ReplaySlotDifficulty.Easy   => 'E',
+        ReplaySlotDifficulty.Medium => 'M',
+        ReplaySlotDifficulty.Hard   => 'H',
+        _                           => 'E'
+    };
 }
 
 public enum ReplaySlotType

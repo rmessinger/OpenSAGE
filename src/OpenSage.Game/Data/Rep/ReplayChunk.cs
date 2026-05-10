@@ -1,6 +1,8 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using OpenSage.FileFormats;
 using OpenSage.Logic.Object;
 using OpenSage.Logic.Orders;
@@ -90,5 +92,78 @@ public sealed class ReplayChunk
         }
 
         return result;
+    }
+
+    /// <summary>
+    /// Writes a single replay chunk for <paramref name="order"/> at <paramref name="timecode"/>.
+    /// <paramref name="playerSlot"/> is 1-based (matching the <c>Number</c> field in the chunk header).
+    /// </summary>
+    internal static void Write(BinaryWriter writer, uint timecode, Order order)
+    {
+        // Chunk header: timecode (uint32), orderType (uint32), playerSlot 1-based (uint32)
+        writer.Write(timecode);
+        writer.Write((uint)order.OrderType);
+        writer.Write((uint)(order.PlayerIndex + 1));
+
+        // Group arguments by type (preserving order within each group)
+        var groups = order.Arguments
+            .GroupBy(a => a.ArgumentType)
+            .Select(g => (type: g.Key, args: g.ToList()))
+            .ToList();
+
+        // numUniqueArgumentTypes
+        writer.Write((byte)groups.Count);
+
+        // (type, count) pairs
+        foreach (var (type, args) in groups)
+        {
+            writer.Write((byte)type);
+            writer.Write((byte)args.Count);
+        }
+
+        // argument values, grouped by type
+        foreach (var (type, args) in groups)
+        {
+            foreach (var arg in args)
+            {
+                switch (type)
+                {
+                    case OrderArgumentType.Integer:
+                        writer.Write(arg.Value.Integer);
+                        break;
+
+                    case OrderArgumentType.Float:
+                        writer.Write(arg.Value.Float);
+                        break;
+
+                    case OrderArgumentType.Boolean:
+                        writer.Write(arg.Value.Boolean);
+                        break;
+
+                    case OrderArgumentType.ObjectId:
+                        writer.Write(arg.Value.ObjectId.Index);
+                        break;
+
+                    case OrderArgumentType.Position:
+                        writer.Write(arg.Value.Position);
+                        break;
+
+                    case OrderArgumentType.ScreenPosition:
+                        writer.Write(arg.Value.ScreenPosition);
+                        break;
+
+                    case OrderArgumentType.ScreenRectangle:
+                        var r = arg.Value.ScreenRectangle;
+                        writer.Write(r.X);
+                        writer.Write(r.Y);
+                        writer.Write(r.Width);
+                        writer.Write(r.Height);
+                        break;
+
+                    default:
+                        throw new InvalidOperationException($"Cannot write argument type {type}");
+                }
+            }
+        }
     }
 }

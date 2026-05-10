@@ -81,7 +81,8 @@ public class SteamInstallationLocator : IInstallationLocator
         {
             var libraryPath = library["path"].ExpectString("path");
             var apps = library["apps"].ExpectDictionary("apps");
-            var containsAppId = apps.ContainsKey(steamDefinition.AppId.ToString());
+            // TODO libraryfolders isn't updating
+            var containsAppId = true; // apps.ContainsKey(steamDefinition.AppId.ToString());
 
             if (containsAppId)
             {

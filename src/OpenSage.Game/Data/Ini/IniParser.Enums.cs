@@ -183,6 +183,12 @@ partial class IniParser
             return (T)enumValue;
         }
 
+        // TODO fix string-based retrieval, this type shares an enum int value with FLESHY_SNIPER
+        if (typeof(T) == typeof(Logic.Object.DamageType) && string.Equals(token.Text, "SUBDUAL_MISSILE"))
+        {
+            return (T)(object)Logic.Object.DamageType.SubdualMissile;
+        }
+
         throw new IniParseException($"Invalid value for type '{typeof(T).Name}': '{token.Text}'", token.Position);
     }
 

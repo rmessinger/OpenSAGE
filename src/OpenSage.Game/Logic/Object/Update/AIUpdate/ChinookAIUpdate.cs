@@ -19,8 +19,6 @@ public class ChinookAIUpdate : SupplyTruckAIUpdate
         ModuleData = moduleData;
     }
 
-    private protected override ChinookAIUpdateStateMachine CreateStateMachine() => new(GameObject, GameEngine, this);
-
     protected override int GetAdditionalValuePerSupplyBox(ScopedAssetCollection<UpgradeTemplate> upgrades)
     {
         // this is also hardcoded in original SAGE, replaced by BonusScience and BonusScienceMultiplier (SupplyCenterDockUpdate) in later games

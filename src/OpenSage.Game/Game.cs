@@ -37,6 +37,8 @@ namespace OpenSage;
 
 public sealed class Game : DisposableBase, IGame
 {
+    private InputLoggerMessageHandler _inputLoggerHandler;
+
     private readonly double _scriptingUpdateInterval;
 
     private readonly FileSystem _fileSystem;
@@ -112,9 +114,8 @@ public sealed class Game : DisposableBase, IGame
 
     public Action Restart { get; set; }
 
-    /// <summary>
-    /// Are we currently in a skirmish game?
-    /// </summary>
+    // When non-null the current match should be saved to this path when it ends.
+    private (string outputPath, ReplayHeader header)? _pendingReplaySave;
     public bool InGame { get; private set; } = false;
 
     public event EventHandler<GameUpdatingEventArgs> Updating;
@@ -145,12 +146,15 @@ public sealed class Game : DisposableBase, IGame
 
         var mapFilename = replayFile.Header.Metadata.MapFile.Replace("userdata", ContentManager.UserDataFileSystem?.RootDirectory);
         mapFilename = FileSystem.NormalizeFilePath(mapFilename);
-        var mapName = mapFilename.Substring(mapFilename.LastIndexOf(Path.DirectorySeparatorChar));
+
+        // The metadata path may or may not include the .map extension.
+        if (!mapFilename.EndsWith(".map", StringComparison.OrdinalIgnoreCase))
+            mapFilename += ".map";
 
         var pSettings = ParseReplayMetaToPlayerSettings(replayFile.Header.Metadata.Slots);
 
         StartSkirmishOrMultiPlayerGame(
-            mapFilename + mapName + ".map",
+            mapFilename,
             new ReplayConnection(replayFile),
             pSettings.ToArray(),
             replayFile.Header.Metadata.SD,
@@ -232,6 +236,44 @@ public sealed class Game : DisposableBase, IGame
         }
 
         return pSettings;
+    }
+
+    private ReplaySlot[] BuildReplaySlotsFromSettings(PlayerSetting[] playerSettings)
+    {
+        var slots = new List<ReplaySlot>();
+        foreach (var ps in playerSettings)
+        {
+            var colorIndex = (sbyte)AssetStore.MultiplayerColors
+                .Select((c, i) => (c, i))
+                .FirstOrDefault(pair => pair.c.RgbColor.R == ps.Color.R
+                                     && pair.c.RgbColor.G == ps.Color.G
+                                     && pair.c.RgbColor.B == ps.Color.B).i;
+
+            var factionIndex = AssetStore.PlayerTemplates
+                .Select((t, i) => (t, i))
+                .FirstOrDefault(pair => pair.t.Side == ps.SideName).i;
+
+            var startPos = ps.StartPosition ?? -1;
+
+            switch (ps.Owner)
+            {
+                case PlayerOwner.Player:
+                    slots.Add(ReplaySlot.CreateHuman(
+                        string.IsNullOrEmpty(ps.Name) ? Environment.MachineName : ps.Name,
+                        colorIndex, factionIndex, startPos, ps.Team));
+                    break;
+                case PlayerOwner.EasyAi:
+                    slots.Add(ReplaySlot.CreateComputer(ReplaySlotDifficulty.Easy, colorIndex, factionIndex, startPos, ps.Team));
+                    break;
+                case PlayerOwner.MediumAi:
+                    slots.Add(ReplaySlot.CreateComputer(ReplaySlotDifficulty.Medium, colorIndex, factionIndex, startPos, ps.Team));
+                    break;
+                case PlayerOwner.HardAi:
+                    slots.Add(ReplaySlot.CreateComputer(ReplaySlotDifficulty.Hard, colorIndex, factionIndex, startPos, ps.Team));
+                    break;
+            }
+        }
+        return slots.ToArray();
     }
 
     /// <summary>
@@ -418,6 +460,10 @@ public sealed class Game : DisposableBase, IGame
 
             InputMessageBuffer = new InputMessageBuffer();
 
+            // Add input logger handler
+            _inputLoggerHandler = new InputLoggerMessageHandler();
+            InputMessageBuffer.Handlers.Add(_inputLoggerHandler);
+
             InputMessageBuffer.Handlers.Add(
                 new CallbackMessageHandler(
                     HandlingPriority.Engine,
@@ -575,6 +621,12 @@ public sealed class Game : DisposableBase, IGame
 
     public void ShowMainMenu()
     {
+        if (_pendingReplaySave.HasValue && NetworkMessageBuffer != null)
+        {
+            NetworkMessageBuffer.SaveReplay(_pendingReplaySave.Value.outputPath, _pendingReplaySave.Value.header);
+            _pendingReplaySave = null;
+        }
+
         var useShellMap = Configuration.LoadShellMap;
         if (useShellMap)
         {
@@ -688,7 +740,21 @@ public sealed class Game : DisposableBase, IGame
 
         NetworkMessageBuffer = new NetworkMessageBuffer(this, connection);
 
-        if (Definition.ControlBar != null)
+        if (!string.IsNullOrEmpty(Configuration.SaveReplayFile) && gameType != GameType.SinglePlayer)
+        {
+            var replaySlots = BuildReplaySlotsFromSettings(playerSettings);
+            var metadata = ReplayMetadata.Create(
+                mapFileName,
+                mapCrc: 0,
+                mapSize: 0,
+                seed,
+                startingCredits: 0,
+                replaySlots);
+            var header = ReplayHeader.Create(metadata);
+            var replayDir = Path.Combine(UserDataFolder ?? string.Empty, "Replays");
+            var outputPath = Path.Combine(replayDir, Configuration.SaveReplayFile);
+            _pendingReplaySave = (outputPath, header);
+        }
         {
             Scene2D.ControlBar = Definition.ControlBar.Create(Scene3D.LocalPlayer.Side, this);
             Scene2D.ControlBar.AddToScene(Scene2D);
@@ -887,7 +953,11 @@ public sealed class Game : DisposableBase, IGame
     protected override void Dispose(bool disposeManagedResources)
     {
         base.Dispose(disposeManagedResources);
-
+        if (_inputLoggerHandler != null)
+        {
+            _inputLoggerHandler.Dispose();
+            _inputLoggerHandler = null;
+        }
         if (UPnP.Status == UPnPStatus.PortsForwarded)
         {
             UPnP.RemovePortForwardingAsync().Wait();
