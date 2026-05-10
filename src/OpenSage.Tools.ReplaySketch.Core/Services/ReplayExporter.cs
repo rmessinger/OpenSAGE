@@ -63,7 +63,7 @@ public static class ReplayExporter
                 // BuildOrders won't consume the position for those action types.
                 var worldPos = action.Position?.Resolve(ctx, rng) ?? Vector3.Zero;
 
-                var actionOrders = BuildOrders(ownerIdx, action.Type, worldPos, player.FactionIndex);
+                var actionOrders = BuildOrders(ownerIdx + 2, action.Type, worldPos, player.FactionIndex);
                 foreach (var order in actionOrders)
                 {
                     orders.Add((cumulativeFrame, order));

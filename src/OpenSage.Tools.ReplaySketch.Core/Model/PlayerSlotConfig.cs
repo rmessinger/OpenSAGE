@@ -34,7 +34,7 @@ public sealed class PlayerSlotConfig
         Name = "Player1",
         FactionIndex = 2,
         Color = 0,
-        StartPosition = 2,
+        StartPosition = 1,
         Team = 1,
         Actions =
         [
@@ -66,7 +66,7 @@ public sealed class PlayerSlotConfig
         Name = "Player2",
         FactionIndex = 4,
         Color = 1,
-        StartPosition = 1,
+        StartPosition = 2,
         Actions =
         [
             new ActionEntry(
