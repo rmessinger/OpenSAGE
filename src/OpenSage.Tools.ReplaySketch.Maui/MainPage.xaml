@@ -8,9 +8,9 @@
 
     <Grid RowDefinitions="*,Auto">
 
-        <!-- Three-column work area -->
+        <!-- Three-column work area: left=200 fixed, centre=* (largest), right=340 fixed -->
         <Grid Grid.Row="0"
-              ColumnDefinitions="230,410,*"
+              ColumnDefinitions="200,*,340"
               Margin="4,0">
 
             <!-- Left: scenario / player-slot editor -->
