@@ -720,14 +720,16 @@ public sealed class Game : DisposableBase, IGame
 
         if (gameType != GameType.SinglePlayer)
         {
+            var cameraSet = false;
             for (var i = 0; i < playerSettings.Length; i++)
             {
                 var playerSetting = playerSettings[i];
                 var player = Scene3D.Players[i + 2];
                 var startingBuilding = Scene3D.CreateSkirmishPlayerStartingBuilding(playerSetting, player);
 
-                if (player.IsHuman)
+                if (player.IsHuman && !cameraSet)
                 {
+                    cameraSet = true;
                     Scene3D.TacticalView.LookAt(startingBuilding.Transform.Translation);
                     Scene3D.TacticalView.InitHeightForMap();
                     Scene3D.TacticalView.SetAngleAndPitchToDefault();
