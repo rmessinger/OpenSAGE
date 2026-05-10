@@ -9,7 +9,7 @@ internal sealed class ScenarioPanel
 {
     // Known maps (expand as needed)
     private static readonly string[] MapLabels = ["Alpine Assault"];
-    private static readonly string[] MapPaths  = ["maps/alpine assault/alpine assault.map"];
+    private static readonly string[] MapPaths = ["maps/alpine assault/alpine assault.map"];
 
     private static readonly string[] FactionLabels =
         ["USA (2)", "China (3)", "GLA (4)", "USA Gen (5)", "Toxin (6)", "Demo (7)",

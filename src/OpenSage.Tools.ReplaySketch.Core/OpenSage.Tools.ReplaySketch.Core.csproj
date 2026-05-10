@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Library</OutputType>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Win32.Registry" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\OpenSage.Core\OpenSage.Core.csproj" />
+    <ProjectReference Include="..\OpenSage.Game\OpenSage.Game.csproj" />
+    <ProjectReference Include="..\OpenSage.Mods.Generals\OpenSage.Mods.Generals.csproj" />
+  </ItemGroup>
+
+</Project>

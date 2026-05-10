@@ -118,11 +118,11 @@ public static class Program
         {
             owner = o.ToLowerInvariant() switch
             {
-                "player"   => PlayerOwner.Player,
-                "easyai"   => PlayerOwner.EasyAi,
+                "player" => PlayerOwner.Player,
+                "easyai" => PlayerOwner.EasyAi,
                 "mediumai" => PlayerOwner.MediumAi,
-                "hardai"   => PlayerOwner.HardAi,
-                _          => PlayerOwner.EasyAi,
+                "hardai" => PlayerOwner.HardAi,
+                _ => PlayerOwner.EasyAi,
             };
         }
 

@@ -31,5 +31,9 @@
     <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="18.0.1" />
     <PackageVersion Include="xunit" Version="2.9.3" />
     <PackageVersion Include="xunit.runner.visualstudio" Version="3.1.5" />
+
+    <!-- ReplaySketch MAUI front-end -->
+    <PackageVersion Include="Microsoft.Maui.Controls" Version="10.0.60" />
+    <PackageVersion Include="SkiaSharp.Views.Maui.Controls" Version="3.119.2" />
   </ItemGroup>
 </Project>

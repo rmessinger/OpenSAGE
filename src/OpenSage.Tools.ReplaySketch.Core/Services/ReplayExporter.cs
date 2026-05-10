@@ -5,8 +5,8 @@ using System.Numerics;
 using System.Text;
 using OpenSage.Data;
 using OpenSage.Data.Rep;
-using OpenSage.Logic.Orders;
 using OpenSage.Logic.Object;
+using OpenSage.Logic.Orders;
 using OpenSage.Tools.ReplaySketch.Model;
 
 namespace OpenSage.Tools.ReplaySketch.Services;
@@ -24,10 +24,10 @@ internal static class KnownDefinitions
 {
     // These placeholder IDs match typical Generals skirmish replays.
     // They should be validated/replaced with a live INI lookup before ship.
-    public const int UsaBarracks   = 40;   // AmericaBarracks
-    public const int UsaRanger     = 41;   // AmericaInfantryRanger
-    public const int GlaBarracks   = 100;  // GLABarracks
-    public const int GlaRebel      = 101;  // GLAInfantryRebel
+    public const int UsaBarracks = 40;   // AmericaBarracks
+    public const int UsaRanger = 41;   // AmericaInfantryRanger
+    public const int GlaBarracks = 100;  // GLABarracks
+    public const int GlaRebel = 101;  // GLAInfantryRebel
 }
 
 public static class ReplayExporter
@@ -177,28 +177,28 @@ public static class ReplayExporter
         switch (actionType)
         {
             case ActionType.BuildBarracks:
-            {
-                var defId = isGla ? KnownDefinitions.GlaBarracks : KnownDefinitions.UsaBarracks;
-                yield return Order.CreateBuildObject(playerIndex, defId, worldPos, 0f);
-                break;
-            }
+                {
+                    var defId = isGla ? KnownDefinitions.GlaBarracks : KnownDefinitions.UsaBarracks;
+                    yield return Order.CreateBuildObject(playerIndex, defId, worldPos, 0f);
+                    break;
+                }
 
             case ActionType.RecruitBasicUnit:
-            {
-                // CreateUnit: select the barracks (dummy ObjectId 1), then queue the unit.
-                var unitDefId = isGla ? KnownDefinitions.GlaRebel : KnownDefinitions.UsaRanger;
-                var recruitOrder = new Order(playerIndex, OrderType.CreateUnit);
-                recruitOrder.AddObjectIdArgument(new ObjectId(1));
-                recruitOrder.AddIntegerArgument(unitDefId);
-                yield return recruitOrder;
-                break;
-            }
+                {
+                    // CreateUnit: select the barracks (dummy ObjectId 1), then queue the unit.
+                    var unitDefId = isGla ? KnownDefinitions.GlaRebel : KnownDefinitions.UsaRanger;
+                    var recruitOrder = new Order(playerIndex, OrderType.CreateUnit);
+                    recruitOrder.AddObjectIdArgument(new ObjectId(1));
+                    recruitOrder.AddIntegerArgument(unitDefId);
+                    yield return recruitOrder;
+                    break;
+                }
 
             case ActionType.AttackEnemyBase:
-            {
-                yield return Order.CreateAttackGround(playerIndex, worldPos);
-                break;
-            }
+                {
+                    yield return Order.CreateAttackGround(playerIndex, worldPos);
+                    break;
+                }
         }
     }
 

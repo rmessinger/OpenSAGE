@@ -1,0 +1,41 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <!-- Override the global TargetFramework from Directory.Build.props -->
+    <TargetFramework></TargetFramework>
+    <TargetFrameworks>net10.0-windows10.0.19041.0</TargetFrameworks>
+    <!-- Add Mac Catalyst when building on macOS -->
+    <TargetFrameworks Condition="$([MSBuild]::IsOSPlatform('macos'))">$(TargetFrameworks);net10.0-maccatalyst</TargetFrameworks>
+    <OutputType>Exe</OutputType>
+    <RootNamespace>OpenSage.Tools.ReplaySketch.Maui</RootNamespace>
+    <UseMaui>true</UseMaui>
+    <SingleProject>true</SingleProject>
+    <ImplicitUsings>enable</ImplicitUsings>
+
+    <!-- Application identity -->
+    <ApplicationTitle>OpenSAGE Replay Sketch</ApplicationTitle>
+    <ApplicationId>com.opensage.replaysketch</ApplicationId>
+    <ApplicationVersion>1</ApplicationVersion>
+    <ApplicationDisplayVersion>1.0</ApplicationDisplayVersion>
+
+    <!-- Windows-specific packaging -->
+    <WindowsPackageType>None</WindowsPackageType>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- App icon (SVG not required; use a placeholder PNG) -->
+    <MauiIcon Include="Resources\AppIcon\appicon.png" />
+    <MauiSplashScreen Include="Resources\Splash\splash.png" Color="#1E1E1E" />
+    <MauiFont Include="Resources\Fonts\*.ttf" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Maui.Controls" />
+    <PackageReference Include="SkiaSharp.Views.Maui.Controls" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\OpenSage.Tools.ReplaySketch.Core\OpenSage.Tools.ReplaySketch.Core.csproj" />
+  </ItemGroup>
+
+</Project>

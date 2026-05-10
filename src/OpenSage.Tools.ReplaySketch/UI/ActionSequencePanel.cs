@@ -71,97 +71,97 @@ internal sealed class ActionSequencePanel
             // ── Position mode ────────────────────────────────────
             if (action.Position != null)
             {
-            ImGui.SeparatorText("Position");
+                ImGui.SeparatorText("Position");
 
-            var isNormalized = action.Position is NormalizedPosition;
-            var modeNorm = isNormalized;
-            var modeLandmark = !isNormalized;
+                var isNormalized = action.Position is NormalizedPosition;
+                var modeNorm = isNormalized;
+                var modeLandmark = !isNormalized;
 
-            if (ImGui.RadioButton("Map Normalized##pm", modeNorm) && !modeNorm)
-            {
-                action.Position = new NormalizedPosition(0.5f, 0.5f);
-            }
-            ImGui.SameLine();
-            if (ImGui.RadioButton("Landmark Relative##pm", modeLandmark) && !modeLandmark)
-            {
-                action.Position = new LandmarkRelativePosition(
-                    LandmarkType.OwnBase, 2.0f, new FixedAngle(45f));
-            }
-
-            ImGui.Spacing();
-
-            if (action.Position is NormalizedPosition np)
-            {
-                var normX = np.NormX;
-                var normY = np.NormY;
-                var changed = false;
-                if (ImGui.DragFloat("X (0–1)##nx", ref normX, 0.005f, 0f, 1f, "%.3f")) changed = true;
-                if (ImGui.DragFloat("Y (0–1)##ny", ref normY, 0.005f, 0f, 1f, "%.3f")) changed = true;
-                if (changed) action.Position = new NormalizedPosition(normX, normY);
-            }
-            else if (action.Position is LandmarkRelativePosition lrp)
-            {
-                // Landmark combo
-                var lmIdx = Array.IndexOf(LandmarkValues, lrp.Landmark);
-                if (lmIdx < 0) lmIdx = 0;
-                LandmarkType newLandmark = lrp.Landmark;
-                if (ImGui.Combo("Landmark##lm", ref lmIdx, LandmarkLabels, LandmarkLabels.Length))
+                if (ImGui.RadioButton("Map Normalized##pm", modeNorm) && !modeNorm)
                 {
-                    newLandmark = LandmarkValues[lmIdx];
-                }
-
-                // Distance
-                var dist = lrp.DistanceInBaseWidths;
-                if (ImGui.DragFloat("Distance (base widths)##dist", ref dist, 0.1f, 0.1f, 20f, "%.2f"))
-                {
-                    dist = MathF.Max(0.1f, dist);
-                }
-
-                // Angle sub-section
-                ImGui.Spacing();
-                ImGui.TextDisabled("Angle");
-
-                var isFixed = lrp.Angle is FixedAngle;
-                AngleConfig newAngle = lrp.Angle;
-
-                if (ImGui.RadioButton("Fixed##ang", isFixed) && !isFixed)
-                {
-                    newAngle = new FixedAngle(0f);
+                    action.Position = new NormalizedPosition(0.5f, 0.5f);
                 }
                 ImGui.SameLine();
-                if (ImGui.RadioButton("Random range##ang", !isFixed) && isFixed)
+                if (ImGui.RadioButton("Landmark Relative##pm", modeLandmark) && !modeLandmark)
                 {
-                    newAngle = new RandomAngle(0f, 360f);
+                    action.Position = new LandmarkRelativePosition(
+                        LandmarkType.OwnBase, 2.0f, new FixedAngle(45f));
                 }
 
-                if (lrp.Angle is FixedAngle fa)
+                ImGui.Spacing();
+
+                if (action.Position is NormalizedPosition np)
                 {
-                    var deg = fa.Degrees;
-                    if (ImGui.DragFloat("Degrees##fdeg", ref deg, 1f, -360f, 360f, "%.1f°"))
-                    {
-                        newAngle = new FixedAngle(deg);
-                    }
-                }
-                else if (lrp.Angle is RandomAngle ra)
-                {
-                    var minDeg = ra.MinDegrees;
-                    var maxDeg = ra.MaxDegrees;
+                    var normX = np.NormX;
+                    var normY = np.NormY;
                     var changed = false;
-                    if (ImGui.DragFloat("Min°##rmin", ref minDeg, 1f, -360f, 360f, "%.1f°")) changed = true;
-                    if (ImGui.DragFloat("Max°##rmax", ref maxDeg, 1f, -360f, 360f, "%.1f°")) changed = true;
-                    if (changed)
+                    if (ImGui.DragFloat("X (0–1)##nx", ref normX, 0.005f, 0f, 1f, "%.3f")) changed = true;
+                    if (ImGui.DragFloat("Y (0–1)##ny", ref normY, 0.005f, 0f, 1f, "%.3f")) changed = true;
+                    if (changed) action.Position = new NormalizedPosition(normX, normY);
+                }
+                else if (action.Position is LandmarkRelativePosition lrp)
+                {
+                    // Landmark combo
+                    var lmIdx = Array.IndexOf(LandmarkValues, lrp.Landmark);
+                    if (lmIdx < 0) lmIdx = 0;
+                    LandmarkType newLandmark = lrp.Landmark;
+                    if (ImGui.Combo("Landmark##lm", ref lmIdx, LandmarkLabels, LandmarkLabels.Length))
                     {
-                        if (minDeg > maxDeg) maxDeg = minDeg;
-                        newAngle = new RandomAngle(minDeg, maxDeg);
+                        newLandmark = LandmarkValues[lmIdx];
+                    }
+
+                    // Distance
+                    var dist = lrp.DistanceInBaseWidths;
+                    if (ImGui.DragFloat("Distance (base widths)##dist", ref dist, 0.1f, 0.1f, 20f, "%.2f"))
+                    {
+                        dist = MathF.Max(0.1f, dist);
+                    }
+
+                    // Angle sub-section
+                    ImGui.Spacing();
+                    ImGui.TextDisabled("Angle");
+
+                    var isFixed = lrp.Angle is FixedAngle;
+                    AngleConfig newAngle = lrp.Angle;
+
+                    if (ImGui.RadioButton("Fixed##ang", isFixed) && !isFixed)
+                    {
+                        newAngle = new FixedAngle(0f);
+                    }
+                    ImGui.SameLine();
+                    if (ImGui.RadioButton("Random range##ang", !isFixed) && isFixed)
+                    {
+                        newAngle = new RandomAngle(0f, 360f);
+                    }
+
+                    if (lrp.Angle is FixedAngle fa)
+                    {
+                        var deg = fa.Degrees;
+                        if (ImGui.DragFloat("Degrees##fdeg", ref deg, 1f, -360f, 360f, "%.1f°"))
+                        {
+                            newAngle = new FixedAngle(deg);
+                        }
+                    }
+                    else if (lrp.Angle is RandomAngle ra)
+                    {
+                        var minDeg = ra.MinDegrees;
+                        var maxDeg = ra.MaxDegrees;
+                        var changed = false;
+                        if (ImGui.DragFloat("Min°##rmin", ref minDeg, 1f, -360f, 360f, "%.1f°")) changed = true;
+                        if (ImGui.DragFloat("Max°##rmax", ref maxDeg, 1f, -360f, 360f, "%.1f°")) changed = true;
+                        if (changed)
+                        {
+                            if (minDeg > maxDeg) maxDeg = minDeg;
+                            newAngle = new RandomAngle(minDeg, maxDeg);
+                        }
+                    }
+
+                    // Commit any changes
+                    if (newLandmark != lrp.Landmark || dist != lrp.DistanceInBaseWidths || newAngle != lrp.Angle)
+                    {
+                        action.Position = new LandmarkRelativePosition(newLandmark, dist, newAngle);
                     }
                 }
-
-                // Commit any changes
-                if (newLandmark != lrp.Landmark || dist != lrp.DistanceInBaseWidths || newAngle != lrp.Angle)
-                {
-                    action.Position = new LandmarkRelativePosition(newLandmark, dist, newAngle);
-                }
-            }
 
             } // end Position block
 

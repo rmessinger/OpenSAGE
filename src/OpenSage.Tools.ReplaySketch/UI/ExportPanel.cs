@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Numerics;
@@ -17,7 +18,9 @@ internal sealed class ExportPanel
     private string? _lastExportPath;
     private string? _lastExportError;
 
-    public void Draw(ReplayScenario scenario, MapMetadataService? map)
+    private const string PreviewReplayName = "sketch_preview.rep";
+
+    public void Draw(ReplayScenario scenario, MapMetadataService? map, LauncherLocatorService launcherLocator)
     {
         ImGui.BeginChild("ExportPanel", new Vector2(0, 0), ImGuiChildFlags.Borders, ImGuiWindowFlags.None);
 
@@ -67,12 +70,12 @@ internal sealed class ExportPanel
         if (ImGui.Button("Export to Replays Dir", new Vector2(180, 0)) && map != null)
         {
             var replaysDir = ReplaysPathResolver.Resolve();
-            var timestamp  = DateTime.Now.ToString("yyyyMMdd_HHmmss");
+            var timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
             var outputPath = Path.Combine(replaysDir, $"sketch_{timestamp}.rep");
 
             var error = ReplayExporter.Export(scenario, map, outputPath);
 
-            _lastExportPath  = error == null ? outputPath : null;
+            _lastExportPath = error == null ? outputPath : null;
             _lastExportError = error;
             _exportAttempted = true;
         }
@@ -97,6 +100,53 @@ internal sealed class ExportPanel
                 {
                     ImGui.SetClipboardText(_lastExportPath);
                 }
+            }
+        }
+
+        ImGui.Spacing();
+
+        // ── Play in Game ──────────────────────────────────────────────────
+        var launcherPath = launcherLocator.Locate();
+        var playDisabled = map == null || launcherPath == null;
+        if (playDisabled) ImGui.BeginDisabled();
+
+        if (ImGui.Button("Play in Game", new Vector2(160, 0)) && map != null && launcherPath != null)
+        {
+            var replaysDir = ReplaysPathResolver.Resolve();
+            var outputPath = Path.Combine(replaysDir, PreviewReplayName);
+
+            var error = ReplayExporter.Export(scenario, map, outputPath);
+            if (error != null)
+            {
+                _lastExportPath = null;
+                _lastExportError = error;
+                _exportAttempted = true;
+            }
+            else
+            {
+                _lastExportPath = outputPath;
+                _lastExportError = null;
+                _exportAttempted = true;
+
+                var psi = new ProcessStartInfo(launcherPath)
+                {
+                    Arguments = $"--replay {PreviewReplayName} --noaudio --noshellmap",
+                    UseShellExecute = false,
+                    CreateNoWindow = false,
+                };
+                Process.Start(psi);
+            }
+        }
+
+        if (playDisabled)
+        {
+            ImGui.EndDisabled();
+            if (ImGui.IsItemHovered(ImGuiHoveredFlags.AllowWhenDisabled))
+            {
+                var tooltip = launcherPath == null
+                    ? "OpenSage.Launcher not found in sibling build dirs"
+                    : "(load a map first)";
+                ImGui.SetTooltip(tooltip);
             }
         }
 

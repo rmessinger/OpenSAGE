@@ -387,7 +387,8 @@ public class GameOptionsUtil
             colorCombo.Enabled = editable;
             teamCombo.Enabled = editable;
             playerTemplateCombo.Enabled = editable;
-        };
+        }
+        ;
 
         var buttonStart = (Button)window.Controls.FindControl($"{_optionsPath}{ButtonStart}");
         buttonStart.Enabled = _game.SkirmishManager.IsStartButtonEnabled();

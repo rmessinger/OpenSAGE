@@ -327,7 +327,7 @@ public sealed class StateReader : StatePersister
 
     public override void PersistEnumByteFlagsValue<TEnum>(ref TEnum value) => value = _binaryReader.ReadByteAsEnumFlags<TEnum>();
 
-    public override void PersistSpan(Span<byte> span) => _binaryReader.BaseStream.Read(span);
+    public override void PersistSpan(Span<byte> span) => _binaryReader.BaseStream.ReadExactly(span);
 
     public override void PersistUpdateFrameValue(ref UpdateFrame value) => PersistUInt32Value(ref value.RawValue);
 

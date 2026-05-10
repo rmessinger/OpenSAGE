@@ -29,17 +29,17 @@ internal sealed class MapPreviewPanel
         0xFF44FFFFu, // slot 3 – yellow
     ];
 
-    private static readonly uint AnchorColor   = 0xFFFFFFFFu; // white
-    private static readonly uint CircleColor   = 0x66FFFFFFu; // translucent white
-    private static readonly uint LineColor     = 0xCCFFFFFFu; // semi-transparent white
-    private static readonly uint ArcColor      = 0x66FFFFFFu;
+    private static readonly uint AnchorColor = 0xFFFFFFFFu; // white
+    private static readonly uint CircleColor = 0x66FFFFFFu; // translucent white
+    private static readonly uint LineColor = 0xCCFFFFFFu; // semi-transparent white
+    private static readonly uint ArcColor = 0x66FFFFFFu;
 
     public void Draw(ReplayScenario scenario, MapMetadataService? map, int selectedSlotIndex)
     {
         ImGui.BeginChild("MapPreview", new Vector2(PreviewSize + 16, PreviewSize + 16), ImGuiChildFlags.Borders, ImGuiWindowFlags.None);
 
         var drawList = ImGui.GetWindowDrawList();
-        var origin   = ImGui.GetCursorScreenPos();
+        var origin = ImGui.GetCursorScreenPos();
 
         // Draw background
         drawList.AddRectFilled(origin, origin + new Vector2(PreviewSize, PreviewSize), 0xFF2A2A2Au);
@@ -75,11 +75,11 @@ internal sealed class MapPreviewPanel
         for (var slotIdx = 0; slotIdx < scenario.Players.Count; slotIdx++)
         {
             var player = scenario.Players[slotIdx];
-            var color  = slotIdx < SlotColors.Length ? SlotColors[slotIdx] : AnchorColor;
+            var color = slotIdx < SlotColors.Length ? SlotColors[slotIdx] : AnchorColor;
             var isSelected = slotIdx == selectedSlotIndex;
 
             // Player start anchor
-            var startWorld  = map.PlayerStart(slotIdx);
+            var startWorld = map.PlayerStart(slotIdx);
             var startScreen = WorldToPreview(new Vector2(startWorld.X, startWorld.Y));
             drawList.AddCircleFilled(startScreen, isSelected ? 7f : 5f, color);
             drawList.AddText(startScreen + new Vector2(6, -6), color, $"P{slotIdx + 1}");
@@ -121,73 +121,73 @@ internal sealed class MapPreviewPanel
         switch (action.Position)
         {
             case NormalizedPosition np:
-            {
-                var extentMin = map.ExtentMin;
-                var extentMax = map.ExtentMax;
-                var wx = extentMin.X + np.NormX * (extentMax.X - extentMin.X);
-                var wy = extentMin.Y + np.NormY * (extentMax.Y - extentMin.Y);
-                var screen = worldToPreview(new Vector2(wx, wy));
-                drawList.AddCircleFilled(screen, isSelected ? 5f : 3f, color);
-                if (isSelected)
-                    drawList.AddCircle(screen, 7f, 0xFFFFFFFFu);
-                drawList.AddText(screen + new Vector2(6, -6), color, label);
-                break;
-            }
+                {
+                    var extentMin = map.ExtentMin;
+                    var extentMax = map.ExtentMax;
+                    var wx = extentMin.X + np.NormX * (extentMax.X - extentMin.X);
+                    var wy = extentMin.Y + np.NormY * (extentMax.Y - extentMin.Y);
+                    var screen = worldToPreview(new Vector2(wx, wy));
+                    drawList.AddCircleFilled(screen, isSelected ? 5f : 3f, color);
+                    if (isSelected)
+                        drawList.AddCircle(screen, 7f, 0xFFFFFFFFu);
+                    drawList.AddText(screen + new Vector2(6, -6), color, label);
+                    break;
+                }
 
             case LandmarkRelativePosition lrp:
-            {
-                var anchor = GetLandmarkWorld(lrp.Landmark, slotIdx, 1 - slotIdx, map);
-                var anchorScreen = worldToPreview(new Vector2(anchor.X, anchor.Y));
-
-                var distPixels = worldRadiusToPixels(lrp.DistanceInBaseWidths * baseRadius);
-
-                // Radius circle — draw it once per unique (anchor, dist) combination.
-                // We always draw it; overlapping circles at the same position are harmless.
-                drawList.AddCircle(anchorScreen, distPixels, CircleColor, 64, 1f);
-
-                switch (lrp.Angle)
                 {
-                    case FixedAngle fa:
-                    {
-                        var rad = fa.Degrees * MathF.PI / 180f;
-                        var tip = anchorScreen + new Vector2(
-                            MathF.Cos(rad) * distPixels,
-                            -MathF.Sin(rad) * distPixels); // flip Y for screen space
-                        drawList.AddLine(anchorScreen, tip, LineColor, 1.5f);
-                        drawList.AddCircleFilled(tip, isSelected ? 5f : 3f, color);
-                        if (isSelected)
-                            drawList.AddCircle(tip, 7f, 0xFFFFFFFFu);
-                        // Label next to the tip so each action's line is identifiable
-                        drawList.AddText(tip + new Vector2(6, -6), color, label);
-                        break;
-                    }
+                    var anchor = GetLandmarkWorld(lrp.Landmark, slotIdx, 1 - slotIdx, map);
+                    var anchorScreen = worldToPreview(new Vector2(anchor.X, anchor.Y));
 
-                    case RandomAngle ra:
+                    var distPixels = worldRadiusToPixels(lrp.DistanceInBaseWidths * baseRadius);
+
+                    // Radius circle — draw it once per unique (anchor, dist) combination.
+                    // We always draw it; overlapping circles at the same position are harmless.
+                    drawList.AddCircle(anchorScreen, distPixels, CircleColor, 64, 1f);
+
+                    switch (lrp.Angle)
                     {
-                        // Draw arc sector between min and max angles
-                        DrawArcSector(drawList, anchorScreen, distPixels,
-                            ra.MinDegrees, ra.MaxDegrees, ArcColor, color);
-                        // Label at the mid-angle tip
-                        var midRad = (ra.MinDegrees + ra.MaxDegrees) * 0.5f * MathF.PI / 180f;
-                        var midTip = anchorScreen + new Vector2(
-                            MathF.Cos(midRad) * distPixels,
-                            -MathF.Sin(midRad) * distPixels);
-                        drawList.AddText(midTip + new Vector2(4, -6), color, label);
-                        break;
+                        case FixedAngle fa:
+                            {
+                                var rad = fa.Degrees * MathF.PI / 180f;
+                                var tip = anchorScreen + new Vector2(
+                                    MathF.Cos(rad) * distPixels,
+                                    -MathF.Sin(rad) * distPixels); // flip Y for screen space
+                                drawList.AddLine(anchorScreen, tip, LineColor, 1.5f);
+                                drawList.AddCircleFilled(tip, isSelected ? 5f : 3f, color);
+                                if (isSelected)
+                                    drawList.AddCircle(tip, 7f, 0xFFFFFFFFu);
+                                // Label next to the tip so each action's line is identifiable
+                                drawList.AddText(tip + new Vector2(6, -6), color, label);
+                                break;
+                            }
+
+                        case RandomAngle ra:
+                            {
+                                // Draw arc sector between min and max angles
+                                DrawArcSector(drawList, anchorScreen, distPixels,
+                                    ra.MinDegrees, ra.MaxDegrees, ArcColor, color);
+                                // Label at the mid-angle tip
+                                var midRad = (ra.MinDegrees + ra.MaxDegrees) * 0.5f * MathF.PI / 180f;
+                                var midTip = anchorScreen + new Vector2(
+                                    MathF.Cos(midRad) * distPixels,
+                                    -MathF.Sin(midRad) * distPixels);
+                                drawList.AddText(midTip + new Vector2(4, -6), color, label);
+                                break;
+                            }
                     }
+                    break;
                 }
-                break;
-            }
         }
     }
 
     private static Vector3 GetLandmarkWorld(LandmarkType landmark, int ownerIdx, int enemyIdx, MapMetadataService map)
         => landmark switch
         {
-            LandmarkType.OwnBase   => map.PlayerStart(ownerIdx),
+            LandmarkType.OwnBase => map.PlayerStart(ownerIdx),
             LandmarkType.EnemyBase => map.PlayerStart(enemyIdx),
             LandmarkType.MapCenter => map.MapCenter,
-            _                      => map.MapCenter,
+            _ => map.MapCenter,
         };
 
     private static void DrawArcSector(
@@ -202,7 +202,7 @@ internal sealed class MapPreviewPanel
         const int segments = 24;
         var minRad = minDeg * MathF.PI / 180f;
         var maxRad = maxDeg * MathF.PI / 180f;
-        var step   = (maxRad - minRad) / segments;
+        var step = (maxRad - minRad) / segments;
 
         // Fan triangles
         for (var i = 0; i < segments; i++)

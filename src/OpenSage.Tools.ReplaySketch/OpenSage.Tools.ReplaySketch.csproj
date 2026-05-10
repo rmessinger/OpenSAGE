@@ -11,9 +11,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\OpenSage.Core\OpenSage.Core.csproj" />
-    <ProjectReference Include="..\OpenSage.Game\OpenSage.Game.csproj" />
-    <ProjectReference Include="..\OpenSage.Mods.Generals\OpenSage.Mods.Generals.csproj" />
+    <ProjectReference Include="..\OpenSage.Tools.ReplaySketch.Core\OpenSage.Tools.ReplaySketch.Core.csproj" />
     <ProjectReference Include="..\Veldrid.ImGui\Veldrid.ImGui.csproj" />
   </ItemGroup>
 

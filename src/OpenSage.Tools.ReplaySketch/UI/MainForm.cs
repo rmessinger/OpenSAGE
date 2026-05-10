@@ -20,6 +20,7 @@ internal sealed class MainForm : DisposableBase
     private int _selectedSlotIndex;
 
     private readonly GeneralsInstallationService _installationService = new();
+    private readonly LauncherLocatorService _launcherLocator = new();
     private readonly ScenarioPanel _scenarioPanel = new();
     private readonly MapPreviewPanel _previewPanel = new();
     private readonly ActionSequencePanel _actionPanel = new();
@@ -83,7 +84,7 @@ internal sealed class MainForm : DisposableBase
         ImGui.EndChild();
 
         // ── Bottom strip: validate & export ──────────────────────────────
-        _exportPanel.Draw(_scenario, _map);
+        _exportPanel.Draw(_scenario, _map, _launcherLocator);
 
         ImGui.End();
         ImGui.PopStyleVar();

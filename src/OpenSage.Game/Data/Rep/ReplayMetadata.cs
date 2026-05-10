@@ -34,18 +34,18 @@ public sealed class ReplayMetadata
         int seed,
         int startingCredits,
         ReplaySlot[] slots) => new ReplayMetadata
-    {
-        MapFileUnknownInt = 0,
-        MapFile = mapFile,
-        MapCrc = mapCrc,
-        MapSize = mapSize,
-        SD = seed,
-        C = 0,
-        SR = 0,
-        StartingCredits = startingCredits,
-        O = string.Empty,
-        Slots = slots
-    };
+        {
+            MapFileUnknownInt = 0,
+            MapFile = mapFile,
+            MapCrc = mapCrc,
+            MapSize = mapSize,
+            SD = seed,
+            C = 0,
+            SR = 0,
+            StartingCredits = startingCredits,
+            O = string.Empty,
+            Slots = slots
+        };
 
     internal static ReplayMetadata Parse(BinaryReader reader)
     {
@@ -278,10 +278,10 @@ public sealed class ReplaySlot
 
     private char DifficultyChar() => ComputerDifficulty switch
     {
-        ReplaySlotDifficulty.Easy   => 'E',
+        ReplaySlotDifficulty.Easy => 'E',
         ReplaySlotDifficulty.Medium => 'M',
-        ReplaySlotDifficulty.Hard   => 'H',
-        _                           => 'E'
+        ReplaySlotDifficulty.Hard => 'H',
+        _ => 'E'
     };
 }
 
