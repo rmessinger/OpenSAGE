@@ -108,9 +108,11 @@ public sealed class OrderProcessor
 
                         var dozer = player.SelectedUnits.SingleOrDefault(u => u.Definition.KindOf.Get(ObjectKinds.Dozer));
 
-                        // In synthetic/scripted replays no dozer is pre-selected; fall back to any idle dozer owned by this player.
+                        // In synthetic/scripted replays no dozer is pre-selected; fall back to the closest
+                        // idle dozer owned by this player so construction starts without delay.
                         dozer ??= _game.Scene3D.GameObjects.Objects
-                            .FirstOrDefault(u => u.Owner == player && u.Definition.KindOf.Get(ObjectKinds.Dozer));
+                            .Where(u => u.Owner == player && u.Definition.KindOf.Get(ObjectKinds.Dozer))
+                            .MinBy(u => Vector3.DistanceSquared(position, u.Transform.Translation));
 
                         (dozer?.AIUpdate as IBuilderAIUpdate)?.SetBuildTarget(gameObject); // todo: I don't love this cast; it would be nice to get rid of it
 
