@@ -56,24 +56,24 @@
   </ItemGroup>
 
   <PropertyGroup>
-    <GlslangValidatorPath>win-x64\glslangValidator.exe</GlslangValidatorPath>
-    <GlslangValidatorPath Condition="$([MSBuild]::IsOsPlatform('osx'))">osx-x64\glslangValidator</GlslangValidatorPath>
-    <GlslangValidatorPath Condition="$([MSBuild]::IsOsPlatform('linux'))">linux-x64\glslangValidator</GlslangValidatorPath>
+    <GlslangValidatorPath>win-x64/glslangValidator.exe</GlslangValidatorPath>
+    <GlslangValidatorPath Condition="$([MSBuild]::IsOSPlatform('osx'))">osx-x64/glslangValidator</GlslangValidatorPath>
+    <GlslangValidatorPath Condition="$([MSBuild]::IsOSPlatform('linux'))">linux-x64/glslangValidator</GlslangValidatorPath>
   </PropertyGroup>
 
   <ItemGroup>
     <None Update="Content\Fonts\FontFallbackSettings.json" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
-  <Target Name="CompileShaders" BeforeTargets="BeforeBuild" Inputs="@(ShaderFiles);@(ShaderHeaderFiles)" Outputs="@(ShaderFiles->'$(IntermediateOutputPath)Assets\Shaders\%(FileName)%(Extension).spv')">
-    <MakeDir Directories="$(IntermediateOutputPath)Assets\Shaders" />
-    <Exec Command="&quot;$(MSBuildThisFileDirectory)..\..\lib\$(GlslangValidatorPath)&quot; -I'.' -DCOMPILING_FOR_VERTEX_SHADER -V %(VertexShaderFiles.Identity) -o &quot;$(IntermediateOutputPath)Assets\Shaders\%(VertexShaderFiles.FileName)%(VertexShaderFiles.Extension).spv&quot;" />
-    <Exec Command="&quot;$(MSBuildThisFileDirectory)..\..\lib\$(GlslangValidatorPath)&quot; -I'.' -DCOMPILING_FOR_FRAGMENT_SHADER -V %(FragmentShaderFiles.Identity) -o &quot;$(IntermediateOutputPath)Assets\Shaders\%(FragmentShaderFiles.FileName)%(FragmentShaderFiles.Extension).spv&quot;" />
+  <Target Name="CompileShaders" BeforeTargets="BeforeBuild" Inputs="@(ShaderFiles);@(ShaderHeaderFiles)" Outputs="@(ShaderFiles->'$(IntermediateOutputPath)Assets/Shaders/%(FileName)%(Extension).spv')">
+    <MakeDir Directories="$(IntermediateOutputPath)Assets/Shaders" />
+    <Exec Command="&quot;$(MSBuildThisFileDirectory)../../lib/$(GlslangValidatorPath)&quot; -I'.' -DCOMPILING_FOR_VERTEX_SHADER -V %(VertexShaderFiles.Identity) -o &quot;$(IntermediateOutputPath)Assets/Shaders/%(VertexShaderFiles.FileName)%(VertexShaderFiles.Extension).spv&quot;" />
+    <Exec Command="&quot;$(MSBuildThisFileDirectory)../../lib/$(GlslangValidatorPath)&quot; -I'.' -DCOMPILING_FOR_FRAGMENT_SHADER -V %(FragmentShaderFiles.Identity) -o &quot;$(IntermediateOutputPath)Assets/Shaders/%(FragmentShaderFiles.FileName)%(FragmentShaderFiles.Extension).spv&quot;" />
   </Target>
 
   <Target Name="EmbedShaders" AfterTargets="CompileShaders">
     <ItemGroup>
-      <CompiledShaderFiles Include="$(IntermediateOutputPath)Assets\Shaders\*.*" />
+      <CompiledShaderFiles Include="$(IntermediateOutputPath)Assets/Shaders/*.*" />
       <EmbeddedResource Include="@(CompiledShaderFiles)">
         <LogicalName>OpenSage.Assets.Shaders.%(FileName)%(Extension)</LogicalName>
       </EmbeddedResource>
