@@ -112,6 +112,18 @@ public sealed class ScopedAssetCollection<TAsset> : IScopedAssetCollection, IEnu
         return _byInternalId[internalId];
     }
 
+    public TAsset GetByInstanceId(uint instanceId)
+    {
+        foreach (var assetScope in _assetScopes)
+        {
+            if (assetScope.Assets.TryGetValue(instanceId, out var result))
+            {
+                return result;
+            }
+        }
+        return null;
+    }
+
     public TAsset GetByIndex(int index)
     {
         return _list[index];

@@ -403,6 +403,12 @@ public sealed class ProductionUpdate : UpdateModule
             return;
         }
 
+        if (producedUnit.AIUpdate == null)
+        {
+            Logger.Warn($"Produced unit '{producedUnit.Definition.Name}' has no AIUpdate module; it cannot be moved to rally point.");
+            return;
+        }
+
         // First go to the natural rally point
         var naturalRallyPoint = ProductionExit?.GetNaturalRallyPoint();
         if (naturalRallyPoint.HasValue)

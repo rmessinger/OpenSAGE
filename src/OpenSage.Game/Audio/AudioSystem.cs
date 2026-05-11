@@ -28,8 +28,11 @@ public sealed class AudioSystem : GameSystem
     private string _currentTrackName;
     private SoundStream _currentTrack;
 
+    private readonly bool _noAudio;
+
     public AudioSystem(IGame game) : base(game)
     {
+        _noAudio = game.Configuration.NoAudio;
         _engine = AddDisposable(AudioEngine.CreateDefault());
         _3dengine = _engine.Create3DEngine();
         _sources = new List<AudioSource>();
@@ -157,6 +160,7 @@ public sealed class AudioSystem : GameSystem
 
     public void PlayAudioEvent(string eventName)
     {
+        if (_noAudio) return;
         var audioEvent = Game.AssetStore.AudioEvents.GetByName(eventName);
 
         if (audioEvent == null)
@@ -216,6 +220,7 @@ public sealed class AudioSystem : GameSystem
 
     public AudioSource PlayAudioEvent(GameObject emitter, BaseAudioEventInfo baseAudioEvent, bool looping = false)
     {
+        if (_noAudio) return null;
         var source = PlayAudioEventBase(baseAudioEvent, looping);
         if (source == null)
         {
@@ -230,6 +235,7 @@ public sealed class AudioSystem : GameSystem
 
     public AudioSource PlayAudioEvent(Vector3 position, BaseAudioEventInfo baseAudioEvent, bool looping = false)
     {
+        if (_noAudio) return null;
         var source = PlayAudioEventBase(baseAudioEvent, looping);
         if (source == null)
         {
@@ -243,6 +249,7 @@ public sealed class AudioSystem : GameSystem
 
     public AudioSource PlayAudioEvent(BaseAudioEventInfo baseAudioEvent, bool looping = false)
     {
+        if (_noAudio) return null;
         var source = PlayAudioEventBase(baseAudioEvent, looping);
         if (source == null)
         {
@@ -255,6 +262,7 @@ public sealed class AudioSystem : GameSystem
 
     public void PlayMusicTrack(MusicTrack musicTrack, bool fadeIn, bool fadeOut)
     {
+        if (_noAudio) return;
         // TODO: fading
         StopCurrentMusicTrack(fadeOut);
 

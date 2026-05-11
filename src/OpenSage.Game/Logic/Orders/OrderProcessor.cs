@@ -94,8 +94,8 @@ public sealed class OrderProcessor
                     break;
                 case OrderType.BuildObject:
                     {
-                        var objectDefinitionId = order.Arguments[0].Value.Integer;
-                        var objectDefinition = _game.AssetStore.ObjectDefinitions.GetByInternalId(objectDefinitionId);
+                        var objectDefinitionId = (uint)order.Arguments[0].Value.Integer;
+                        var objectDefinition = _game.AssetStore.ObjectDefinitions.GetByInstanceId(objectDefinitionId);
                         var position = order.Arguments[1].Value.Position;
                         var angle = order.Arguments[2].Value.Float;
                         player.BankAccount.Withdraw((uint)objectDefinition.BuildCost);
@@ -147,10 +147,10 @@ public sealed class OrderProcessor
                 case OrderType.BeginUpgrade:
                     {
                         var objectDefinitionId = order.Arguments[0].Value.ObjectId;
-                        var upgradeDefinitionId = order.Arguments[1].Value.Integer;
+                        var upgradeDefinitionId = (uint)order.Arguments[1].Value.Integer;
 
                         var gameObject = _game.Scene3D.GameObjects.GetObjectById(objectDefinitionId);
-                        var upgradeDefinition = _game.AssetStore.Upgrades.GetByInternalId(upgradeDefinitionId);
+                        var upgradeDefinition = _game.AssetStore.Upgrades.GetByInstanceId(upgradeDefinitionId);
                         player.BankAccount.Withdraw((uint)upgradeDefinition.BuildCost);
 
                         gameObject?.ProductionUpdate.QueueUpgrade(upgradeDefinition);
@@ -159,8 +159,8 @@ public sealed class OrderProcessor
 
                 case OrderType.CancelUpgrade:
                     {
-                        var upgradeDefinitionId = order.Arguments[0].Value.Integer;
-                        var upgradeDefinition = _game.AssetStore.Upgrades.GetByInternalId(upgradeDefinitionId);
+                        var upgradeDefinitionId = (uint)order.Arguments[0].Value.Integer;
+                        var upgradeDefinition = _game.AssetStore.Upgrades.GetByInstanceId(upgradeDefinitionId);
 
                         player.BankAccount.Deposit((uint)upgradeDefinition.BuildCost);
                         // since this is a building and only one at a time can be selected
@@ -177,8 +177,8 @@ public sealed class OrderProcessor
 
                 case OrderType.CreateUnit:
                     {
-                        var objectDefinitionId = order.Arguments[0].Value.Integer;
-                        var objectDefinition = _game.AssetStore.ObjectDefinitions.GetByInternalId(objectDefinitionId);
+                        var objectDefinitionId = (uint)order.Arguments[0].Value.Integer;
+                        var objectDefinition = _game.AssetStore.ObjectDefinitions.GetByInstanceId(objectDefinitionId);
                         player.BankAccount.Withdraw((uint)objectDefinition.BuildCost);
                         var placeInQueue = order.Arguments[1].Value.Integer;
 
@@ -383,8 +383,8 @@ public sealed class OrderProcessor
                     break;
 
                 case OrderType.PurchaseScience:
-                    var scienceDefinitionId = order.Arguments[0].Value.Integer;
-                    var science = _game.AssetStore.Sciences.GetByInternalId(scienceDefinitionId);
+                    var scienceDefinitionId = (uint)order.Arguments[0].Value.Integer;
+                    var science = _game.AssetStore.Sciences.GetByInstanceId(scienceDefinitionId);
                     player.PurchaseScience(science);
                     //TODO: implement
                     break;

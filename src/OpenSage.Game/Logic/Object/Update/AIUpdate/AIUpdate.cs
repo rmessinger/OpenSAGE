@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Numerics;
 using ImGuiNET;
 using OpenSage.Data.Ini;
@@ -208,6 +209,37 @@ public class AIUpdate : UpdateModule
         {
             AddTargetPoint(targetPoint);
         }
+    }
+
+    /// <summary>
+    /// Computes an approach point on the perimeter of <paramref name="buildTarget"/>'s bounding sphere,
+    /// in the direction from the building toward this unit. The returned point is reachable once the
+    /// building is constructed (i.e. it is outside the building footprint).
+    /// </summary>
+    protected Vector3 ComputePerimeterApproachPoint(GameObject buildTarget)
+    {
+        var buildingCenter = buildTarget.Translation;
+        var toSelf = GameObject.Translation - buildingCenter;
+
+        Vector2 dir2D;
+        if (toSelf.X * toSelf.X + toSelf.Y * toSelf.Y > 0.01f)
+        {
+            var len = MathF.Sqrt(toSelf.X * toSelf.X + toSelf.Y * toSelf.Y);
+            dir2D = new Vector2(toSelf.X / len, toSelf.Y / len);
+        }
+        else
+        {
+            // Dozer is on top of the building center; fall back to the building's forward axis.
+            var forward = Vector3.Transform(Vector3.UnitX, buildTarget.Rotation);
+            var len = MathF.Sqrt(forward.X * forward.X + forward.Y * forward.Y);
+            dir2D = len > 0.001f ? new Vector2(forward.X / len, forward.Y / len) : Vector2.UnitX;
+        }
+
+        var buildingRadius = buildTarget.RoughCollider?.WorldBounds.Radius ?? 0f;
+        return new Vector3(
+            buildingCenter.X + dir2D.X * buildingRadius,
+            buildingCenter.Y + dir2D.Y * buildingRadius,
+            buildingCenter.Z);
     }
 
     internal virtual void SetTargetPoint(Vector3 targetPoint)

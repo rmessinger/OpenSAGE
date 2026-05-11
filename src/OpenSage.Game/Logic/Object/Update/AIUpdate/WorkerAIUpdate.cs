@@ -48,8 +48,7 @@ public class WorkerAIUpdate : SupplyAIUpdate, IBuilderAIUpdate
     public void SetBuildTarget(GameObject gameObject)
     {
         // note that the order here is important, as SetTargetPoint will clear any existing buildTarget
-        // TODO: target should not be directly on the building, but rather a point along the foundation perimeter
-        SetTargetPoint(gameObject.Translation);
+        SetTargetPoint(ComputePerimeterApproachPoint(gameObject));
         _state.SetBuildTarget(gameObject, GameEngine.GameLogic.CurrentFrame.Value);
         ResetSupplyState();
     }
@@ -57,7 +56,7 @@ public class WorkerAIUpdate : SupplyAIUpdate, IBuilderAIUpdate
     public void SetRepairTarget(GameObject gameObject)
     {
         // note that the order here is important, as SetTargetPoint will clear any existing repairTarget
-        SetTargetPoint(gameObject.Translation);
+        SetTargetPoint(ComputePerimeterApproachPoint(gameObject));
         _state.SetRepairTarget(gameObject, GameEngine.GameLogic.CurrentFrame.Value);
         ResetSupplyState();
     }
