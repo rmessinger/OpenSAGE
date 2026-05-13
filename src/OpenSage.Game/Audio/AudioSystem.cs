@@ -33,12 +33,28 @@ public sealed class AudioSystem : GameSystem
     public AudioSystem(IGame game) : base(game)
     {
         _noAudio = game.Configuration.NoAudio;
-        _engine = AddDisposable(AudioEngine.CreateDefault());
-        _3dengine = _engine.Create3DEngine();
         _sources = new List<AudioSource>();
         _cached = new Dictionary<string, AudioBuffer>();
         _mixers = new Dictionary<AudioVolumeSlider, Submixer>();
         _settings = game.AssetStore.AudioSettings.Current;
+
+        try
+        {
+            _engine = AddDisposable(AudioEngine.CreateDefault());
+        }
+        catch (Exception ex)
+        {
+            Logger.Warn($"Audio engine initialization failed, disabling audio: {ex.Message}");
+        }
+
+        if (_engine == null)
+        {
+            Logger.Warn("No audio engine available, disabling audio.");
+            _noAudio = true;
+            return;
+        }
+
+        _3dengine = _engine.Create3DEngine();
 
         CreateSubmixers();
 
@@ -70,6 +86,8 @@ public sealed class AudioSystem : GameSystem
 
     private void CreateSubmixers()
     {
+        if (_engine == null) return;
+
         var noAudio = Game.Configuration.NoAudio;
 
         // Create all available mixers
@@ -103,6 +121,8 @@ public sealed class AudioSystem : GameSystem
     public AudioSource GetSound(FileSystemEntry entry,
         AudioVolumeSlider? vslider = AudioVolumeSlider.None, bool loop = false)
     {
+        if (_engine == null) return null;
+
         AudioBuffer buffer;
 
         if (!_cached.ContainsKey(entry.FilePath))
@@ -154,6 +174,7 @@ public sealed class AudioSystem : GameSystem
     /// </summary>
     public SoundStream GetStream(FileSystemEntry entry)
     {
+        if (_engine == null) return null;
         // TODO: Use submixer (currently not possible)
         return AddDisposable(new SoundStream(entry.Open(), _engine));
     }
@@ -213,6 +234,8 @@ public sealed class AudioSystem : GameSystem
 
     private void UpdateListener(Camera camera)
     {
+        if (_3dengine == null) return;
+
         _3dengine.SetListenerPosition(camera.Position);
         var front = Vector3.Normalize(camera.Target - camera.Position);
         _3dengine.SetListenerOrientation(camera.Up, front);

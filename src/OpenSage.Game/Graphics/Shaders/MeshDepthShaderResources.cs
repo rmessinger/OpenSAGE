@@ -8,6 +8,10 @@ internal sealed class MeshDepthShaderResources : ShaderSetBase
 {
     public readonly Material Material;
 
+    // Empty resource sets for pipeline slots that are declared in the shader but unused
+    // during the depth/shadow pass. Metal requires all declared slots to be bound before drawing.
+    public readonly ResourceSet[] EmptyResourceSets;
+
     public MeshDepthShaderResources(
         ShaderSetStore store)
         : base(store, "MeshDepth", MeshShaderResources.MeshVertex.VertexDescriptors)
@@ -33,5 +37,18 @@ internal sealed class MeshDepthShaderResources : ShaderSetBase
                 pipeline,
                 null,
                 SurfaceType.Opaque));
+
+        // Create empty resource sets for any empty resource layouts (slots with 0 elements).
+        // These are needed on Metal which requires all pipeline slots to be bound.
+        EmptyResourceSets = new ResourceSet[ResourceLayouts.Length];
+        for (var i = 0; i < ResourceLayouts.Length; i++)
+        {
+            if (ResourceLayoutDescriptions[i].Elements.Length == 0)
+            {
+                EmptyResourceSets[i] = AddDisposable(
+                    GraphicsDevice.ResourceFactory.CreateResourceSet(
+                        new ResourceSetDescription(ResourceLayouts[i])));
+            }
+        }
     }
 }

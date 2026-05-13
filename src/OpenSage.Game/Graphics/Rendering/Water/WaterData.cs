@@ -7,10 +7,10 @@ namespace OpenSage.Graphics.Rendering.Water;
 internal sealed class WaterData : DisposableBase
 {
     public const PixelFormat ReflectionMapPixelFormat = PixelFormat.B8_G8_R8_A8_UNorm;
-    public const PixelFormat ReflectionDepthMapPixelFormat = PixelFormat.D24_UNorm_S8_UInt;
+    public const PixelFormat ReflectionDepthMapPixelFormat = PixelFormat.D32_Float_S8_UInt;
 
     public const PixelFormat RefractionMapPixelFormat = PixelFormat.B8_G8_R8_A8_UNorm;
-    public const PixelFormat RefractionDepthMapPixelFormat = PixelFormat.D24_UNorm_S8_UInt;
+    public const PixelFormat RefractionDepthMapPixelFormat = PixelFormat.D32_Float_S8_UInt;
 
     public uint ReflectionMapSize { get; }
 

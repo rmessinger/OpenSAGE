@@ -8,7 +8,7 @@
             "name": "Generals",
             "type": "coreclr",
             "request": "launch",
-            "program": "${workspaceFolder}/src/OpenSage.Launcher/bin/Debug/net8.0/OpenSage.Launcher.dll",
+            "program": "${workspaceFolder}/src/OpenSage.Launcher/bin/Debug/net10.0/OpenSage.Launcher.dll",
             "args": [
                 "--developermode", "true",
                 "--game", "0"
@@ -18,7 +18,7 @@
           "name": "Generals (Alpine Assault)",
           "type": "coreclr",
           "request": "launch",
-          "program": "${workspaceFolder}/src/OpenSage.Launcher/bin/Debug/net8.0/OpenSage.Launcher.dll",
+          "program": "${workspaceFolder}/src/OpenSage.Launcher/bin/Debug/net10.0/OpenSage.Launcher.dll",
           "args": [
               "--developermode", "true",
               "--game", "0",
@@ -29,7 +29,7 @@
           "name": "Generals (Tournament Island)",
           "type": "coreclr",
           "request": "launch",
-          "program": "${workspaceFolder}/src/OpenSage.Launcher/bin/Debug/net8.0/OpenSage.Launcher.dll",
+          "program": "${workspaceFolder}/src/OpenSage.Launcher/bin/Debug/net10.0/OpenSage.Launcher.dll",
           "args": [
               "--developermode", "true",
               "--game", "0",
@@ -37,10 +37,17 @@
           ]
         },
         {
+            "name": "ReplaySketch (MAUI)",
+            "type": "maui",
+            "request": "launch",
+            "preLaunchTask": "maui: Build",
+            "project": "${workspaceFolder}/src/OpenSage.Tools.ReplaySketch.Maui/OpenSage.Tools.ReplaySketch.Maui.csproj"
+        },
+        {
             "name": "Zero Hour",
             "type": "coreclr",
             "request": "launch",
-            "program": "${workspaceFolder}/src/OpenSage.Launcher/bin/Debug/net8.0/OpenSage.Launcher.dll",
+            "program": "${workspaceFolder}/src/OpenSage.Launcher/bin/Debug/net10.0/OpenSage.Launcher.dll",
             "args": [
                 "--developermode", "true",
                 "--game", "1"

@@ -115,9 +115,17 @@ public sealed class ContentManager : DisposableBase
         }
     }
 
+    private static readonly NLog.Logger Logger = NLog.LogManager.GetCurrentClassLogger();
+
     internal void LoadIniFile(string filePath)
     {
-        LoadIniFile(FileSystem.GetFile(filePath));
+        var entry = FileSystem.GetFile(filePath);
+        if (entry == null)
+        {
+            Logger.Warn($"INI file not found, skipping: {filePath}");
+            return;
+        }
+        LoadIniFile(entry);
     }
 
     internal void LoadIniFile(FileSystemEntry entry)

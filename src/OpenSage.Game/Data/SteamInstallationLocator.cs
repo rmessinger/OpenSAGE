@@ -139,7 +139,7 @@ public class SteamInstallationLocator : IInstallationLocator
             // Steam's UI doesn't allow installing games that don't have a macOS version (which is the case for all SAGE games),
             // but there are workarounds (such as SteamCMD or -console flag) that can be used to install Windows games.
             return Path.Combine(
-                Environment.GetFolderPath(Environment.SpecialFolder.Personal),
+                Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
                 "Library",
                 "Application Support",
                 "Steam",

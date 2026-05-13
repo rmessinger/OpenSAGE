@@ -21,7 +21,7 @@ internal sealed class RenderPipeline : DisposableBase
     private static readonly RgbaFloat ClearColor = new RgbaFloat(105, 105, 105, 255);
 
     public static readonly OutputDescription GameOutputDescription = new OutputDescription(
-        new OutputAttachmentDescription(PixelFormat.D24_UNorm_S8_UInt),
+        new OutputAttachmentDescription(PixelFormat.D32_Float_S8_UInt),
         new OutputAttachmentDescription(PixelFormat.B8_G8_R8_A8_UNorm));
 
     private readonly RenderList _renderList;
@@ -31,6 +31,7 @@ internal sealed class RenderPipeline : DisposableBase
     private readonly GraphicsLoadContext _loadContext;
     private readonly GlobalShaderResources _globalShaderResources;
     private readonly GlobalShaderResourceData _globalShaderResourceData;
+    private readonly MeshDepthShaderResources _meshDepthShaderResources;
 
     internal readonly DrawingContext2D DrawingContext;
 
@@ -60,6 +61,7 @@ internal sealed class RenderPipeline : DisposableBase
 
         _globalShaderResources = game.GraphicsLoadContext.ShaderResources.Global;
         _globalShaderResourceData = AddDisposable(new GlobalShaderResourceData(game.GraphicsDevice, _globalShaderResources, game.GraphicsLoadContext.StandardGraphicsResources));
+        _meshDepthShaderResources = game.GraphicsLoadContext.ShaderResources.MeshDepth;
 
         _commandList = AddDisposable(graphicsDevice.ResourceFactory.CreateCommandList());
 
@@ -89,7 +91,7 @@ internal sealed class RenderPipeline : DisposableBase
         RemoveAndDispose(ref _intermediateFramebuffer);
 
         _intermediateDepthBuffer = AddDisposable(graphicsDevice.ResourceFactory.CreateTexture(
-            TextureDescription.Texture2D(target.Width, target.Height, 1, 1, PixelFormat.D24_UNorm_S8_UInt, TextureUsage.DepthStencil)));
+            TextureDescription.Texture2D(target.Width, target.Height, 1, 1, PixelFormat.D32_Float_S8_UInt, TextureUsage.DepthStencil)));
 
         _intermediateTexture = AddDisposable(graphicsDevice.ResourceFactory.CreateTexture(
             TextureDescription.Texture2D(target.Width, target.Height, 1, 1, target.ColorTargets[0].Target.Format, TextureUsage.RenderTarget | TextureUsage.Sampled)));
@@ -410,6 +412,19 @@ internal sealed class RenderPipeline : DisposableBase
         if (passResourceSet != null)
         {
             commandList.SetGraphicsResourceSet(1, passResourceSet);
+        }
+        else
+        {
+            // Shadow/depth pass: bind empty resource sets for any unused pipeline slots
+            // to satisfy Metal's requirement that all declared slots are bound.
+            var emptyResourceSets = _meshDepthShaderResources.EmptyResourceSets;
+            for (var i = 1; i < emptyResourceSets.Length; i++)
+            {
+                if (emptyResourceSets[i] != null)
+                {
+                    commandList.SetGraphicsResourceSet((uint)i, emptyResourceSets[i]);
+                }
+            }
         }
     }
 }

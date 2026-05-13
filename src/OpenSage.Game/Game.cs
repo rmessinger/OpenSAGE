@@ -37,6 +37,11 @@ namespace OpenSage;
 
 public sealed class Game : DisposableBase, IGame
 {
+    static Game()
+    {
+        System.Text.Encoding.RegisterProvider(System.Text.CodePagesEncodingProvider.Instance);
+    }
+
     private InputLoggerMessageHandler _inputLoggerHandler;
 
     private readonly double _scriptingUpdateInterval;

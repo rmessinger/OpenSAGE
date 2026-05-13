@@ -10,6 +10,7 @@ public abstract class ShaderSet : DisposableBase
     public readonly ushort Id;
     public readonly ShaderSetDescription Description;
     public readonly ResourceLayout[] ResourceLayouts;
+    public readonly ResourceLayoutDescription[] ResourceLayoutDescriptions;
 
     public GraphicsDevice GraphicsDevice => Store.GraphicsDevice;
 
@@ -42,6 +43,7 @@ public abstract class ShaderSet : DisposableBase
             new[] { vertexShader, fragmentShader });
 
         ResourceLayouts = new ResourceLayout[cacheFile.ResourceLayoutDescriptions.Length];
+        ResourceLayoutDescriptions = cacheFile.ResourceLayoutDescriptions;
         for (var i = 0; i < cacheFile.ResourceLayoutDescriptions.Length; i++)
         {
             ResourceLayouts[i] = AddDisposable(

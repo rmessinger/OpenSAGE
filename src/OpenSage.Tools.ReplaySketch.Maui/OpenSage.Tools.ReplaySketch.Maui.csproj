@@ -25,6 +25,9 @@
 
     <!-- Windows-specific packaging -->
     <WindowsPackageType>None</WindowsPackageType>
+
+    <!-- macOS entitlements for sandboxed file access -->
+    <CodesignEntitlements Condition="$([MSBuild]::IsOSPlatform('macos'))">Platforms/MacCatalyst/Entitlements.plist</CodesignEntitlements>
   </PropertyGroup>
 
   <ItemGroup>
