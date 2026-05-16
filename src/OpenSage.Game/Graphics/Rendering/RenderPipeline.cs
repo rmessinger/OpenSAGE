@@ -18,7 +18,7 @@ internal sealed class RenderPipeline : DisposableBase
 
     private const int ParallelCullingBatchSize = 128;
 
-    private static readonly RgbaFloat ClearColor = new RgbaFloat(105, 105, 105, 255);
+    private static readonly RgbaFloat ClearColor = new RgbaFloat(105 / 255f, 105 / 255f, 105 / 255f, 1f);
 
     public static readonly OutputDescription GameOutputDescription = new OutputDescription(
         new OutputAttachmentDescription(PixelFormat.D32_Float_S8_UInt),

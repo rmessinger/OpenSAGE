@@ -16,7 +16,6 @@
     <PackageReference Include="SixLabors.ImageSharp.Drawing" />
     <PackageReference Include="SharpAudio" />
     <PackageReference Include="SharpAudio.Codec" />
-    <PackageReference Include="Sprintf.NET" />
 
     <PackageReference Include="System.Text.Encoding.CodePages" />
     <PackageReference Include="System.ValueTuple" />

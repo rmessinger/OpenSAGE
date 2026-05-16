@@ -17,7 +17,7 @@ public sealed class LocalizedString
     public string Localize(params object[] args)
     {
         _localized ??= Original?.Translate() ?? string.Empty;
-        return args.Length > 0 ? SprintfNET.StringFormatter.PrintF(_localized, args) : _localized;
+        return args.Length > 0 ? PrintfFormatter.Format(_localized, args) : _localized;
     }
     public static LocalizedString CreateApt(string original)
     {

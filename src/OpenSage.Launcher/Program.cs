@@ -306,29 +306,6 @@ public static class Program
                 game.ShowMainMenu();
             }
 
-            game.InputMessageBuffer.Handlers.Add(
-                new CallbackMessageHandler(
-                    HandlingPriority.Window,
-                    message =>
-                    {
-                        if (message.MessageType != InputMessageType.KeyDown)
-                            return InputMessageResult.NotHandled;
-
-                        if (message.Value.Key == Key.Enter && (message.Value.Modifiers & ModifierKeys.Alt) != 0)
-                        {
-                            window.Fullscreen = !window.Fullscreen;
-                            return InputMessageResult.Handled;
-                        }
-
-                        if (message.Value.Key == Key.D && (message.Value.Modifiers & ModifierKeys.Alt) != 0)
-                        {
-                            developerModeEnabled = !developerModeEnabled;
-                            return InputMessageResult.Handled;
-                        }
-
-                        return InputMessageResult.NotHandled;
-                    }));
-
             Logger.Debug("Starting game");
 
             game.StartRun();
@@ -338,6 +315,23 @@ public static class Program
                 if (!window.PumpEvents())
                 {
                     break;
+                }
+
+                // Handle window-level shortcuts before routing input to game or developer UI,
+                // so they work regardless of whether the game view is focused.
+                foreach (var message in window.MessageQueue)
+                {
+                    if (message.MessageType != InputMessageType.KeyDown)
+                        continue;
+
+                    if (message.Value.Key == Key.Enter && (message.Value.Modifiers & ModifierKeys.Alt) != 0)
+                    {
+                        window.Fullscreen = !window.Fullscreen;
+                    }
+                    else if (message.Value.Key == Key.D && (message.Value.Modifiers & ModifierKeys.Alt) != 0)
+                    {
+                        developerModeEnabled = !developerModeEnabled;
+                    }
                 }
 
                 if (developerModeEnabled)

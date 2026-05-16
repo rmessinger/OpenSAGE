@@ -1,8 +1,10 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
 using System.Security.Cryptography;
 using System.Text;
+using System.Text.RegularExpressions;
 using Veldrid;
 using Veldrid.SPIRV;
 
@@ -82,8 +84,12 @@ internal static class ShaderCrossCompiler
 
             case GraphicsBackend.Metal:
                 // TODO: Compile to IR.
-                vsBytes = Encoding.UTF8.GetBytes(compilationResult.VertexShader);
-                fsBytes = Encoding.UTF8.GetBytes(compilationResult.FragmentShader);
+                // SPIRV-cross assigns Metal buffer/texture/sampler indices in a different order
+                // than Veldrid's Metal backend (ResourceBindingModel.Improved) expects.
+                // Post-process the MSL to remap all [[resource(N)]] indices to match Veldrid.
+                var layouts = compilationResult.Reflection.ResourceLayouts;
+                vsBytes = Encoding.UTF8.GetBytes(FixMetalMslBindings(compilationResult.VertexShader, layouts, ShaderStages.Vertex));
+                fsBytes = Encoding.UTF8.GetBytes(FixMetalMslBindings(compilationResult.FragmentShader, layouts, ShaderStages.Fragment));
                 break;
 
             default:
@@ -159,5 +165,134 @@ internal static class ShaderCrossCompiler
             GraphicsBackend.OpenGLES => CrossCompileTarget.ESSL,
             _ => throw new SpirvCompilationException($"Invalid GraphicsBackend: {backend}"),
         };
+    }
+
+    /// <summary>
+    /// Remaps [[buffer(N)]], [[texture(N)]], and [[sampler(N)]] indices in the compiled MSL
+    /// function signature to match the binding indices Veldrid's Metal backend will use at runtime.
+    ///
+    /// SPIRV-cross assigns Metal indices based on actual resource usage in the SPIR-V (e.g.,
+    /// VS-exclusive resources first in the VS), while Veldrid computes indices by iterating the
+    /// ResourceLayoutDescriptions in order for the given stage. These orderings can differ, causing
+    /// shaders to read from the wrong buffers/textures.
+    /// </summary>
+    private static string FixMetalMslBindings(
+        string msl,
+        ResourceLayoutDescription[] layouts,
+        ShaderStages stage)
+    {
+        // Compute the Metal buffer/texture/sampler index Veldrid will assign for each named resource.
+        // Veldrid's Metal backend (ResourceBindingModel.Improved) assigns indices sequentially
+        // per resource type, iterating layouts in set order and elements within each layout in order.
+        var expectedBuffers = new Dictionary<string, int>();
+        var expectedTextures = new Dictionary<string, int>();
+        var expectedSamplers = new Dictionary<string, int>();
+
+        int bufIdx = 0, texIdx = 0, sampIdx = 0;
+        foreach (var layout in layouts)
+        {
+            foreach (var element in layout.Elements)
+            {
+                if ((element.Stages & stage) == 0)
+                {
+                    continue;
+                }
+
+                switch (element.Kind)
+                {
+                    case ResourceKind.UniformBuffer:
+                    case ResourceKind.StructuredBufferReadOnly:
+                    case ResourceKind.StructuredBufferReadWrite:
+                        expectedBuffers[element.Name] = bufIdx++;
+                        break;
+                    case ResourceKind.TextureReadOnly:
+                    case ResourceKind.TextureReadWrite:
+                        expectedTextures[element.Name] = texIdx++;
+                        break;
+                    case ResourceKind.Sampler:
+                        expectedSamplers[element.Name] = sampIdx++;
+                        break;
+                }
+            }
+        }
+
+        // Find the entry-point function signature to read actual Metal binding indices.
+        // [[buffer(N)]], [[texture(N)]], [[sampler(N)]] attributes only appear in function parameters.
+        var funcKeyword = stage == ShaderStages.Vertex ? "vertex " : "fragment ";
+        var funcStart = msl.IndexOf(funcKeyword, StringComparison.Ordinal);
+        if (funcStart < 0)
+        {
+            return msl;
+        }
+
+        var bodyStart = msl.IndexOf('{', funcStart);
+        var sig = msl.Substring(funcStart, bodyStart - funcStart);
+
+        // Buffers: "constant TypeName& varName [[buffer(N)]]"
+        //       or "const device TypeName& varName [[buffer(N)]]"
+        // The TypeName (GLSL uniform block name) matches element.Name in the layout.
+        var actualBuffers = new Dictionary<string, int>();
+        foreach (Match m in Regex.Matches(sig,
+            @"(?:constant|const\s+device|device)\s+(\w+)\s*&\s*\w+\s*\[\[buffer\((\d+)\)\]\]"))
+        {
+            actualBuffers[m.Groups[1].Value] = int.Parse(m.Groups[2].Value);
+        }
+
+        // Textures and samplers: the parameter name before [[texture(N)]] / [[sampler(N)]]
+        // matches element.Name in the layout (preserved from GLSL sampler/image variable names).
+        var actualTextures = new Dictionary<string, int>();
+        foreach (Match m in Regex.Matches(sig, @"(\w+)\s*\[\[texture\((\d+)\)\]\]"))
+        {
+            actualTextures[m.Groups[1].Value] = int.Parse(m.Groups[2].Value);
+        }
+
+        var actualSamplers = new Dictionary<string, int>();
+        foreach (Match m in Regex.Matches(sig, @"(\w+)\s*\[\[sampler\((\d+)\)\]\]"))
+        {
+            actualSamplers[m.Groups[1].Value] = int.Parse(m.Groups[2].Value);
+        }
+
+        msl = ApplyMslIndexRemapping(msl, actualBuffers, expectedBuffers, "buffer");
+        msl = ApplyMslIndexRemapping(msl, actualTextures, expectedTextures, "texture");
+        msl = ApplyMslIndexRemapping(msl, actualSamplers, expectedSamplers, "sampler");
+
+        return msl;
+    }
+
+    private static string ApplyMslIndexRemapping(
+        string msl,
+        Dictionary<string, int> actual,
+        Dictionary<string, int> expected,
+        string slotType)
+    {
+        // Build remap: old Metal index → new Metal index (only for resources that moved).
+        var remap = new Dictionary<int, int>();
+        foreach (var (name, actualIdx) in actual)
+        {
+            if (expected.TryGetValue(name, out int expectedIdx) && actualIdx != expectedIdx)
+            {
+                remap[actualIdx] = expectedIdx;
+            }
+        }
+
+        if (remap.Count == 0)
+        {
+            return msl;
+        }
+
+        // Two-phase replacement to correctly handle index swaps (e.g., 0↔1):
+        //   Phase 1: [[kind(N)]] → [[kind(TMP_N)]]  (all remapped indices simultaneously)
+        //   Phase 2: [[kind(TMP_N)]] → [[kind(newN)]]
+        foreach (var from in remap.Keys)
+        {
+            msl = msl.Replace($"[[{slotType}({from})]]", $"[[{slotType}(TMP_{from})]]");
+        }
+
+        foreach (var (from, to) in remap)
+        {
+            msl = msl.Replace($"[[{slotType}(TMP_{from})]]", $"[[{slotType}({to})]]");
+        }
+
+        return msl;
     }
 }

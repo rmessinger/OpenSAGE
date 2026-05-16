@@ -418,7 +418,7 @@ public class ImGuiRenderer : IDisposable
             _windowWidth / _scaleFactor.X,
             _windowHeight / _scaleFactor.Y);
         io.DisplayFramebufferScale = _scaleFactor;
-        io.DeltaTime = deltaSeconds; // DeltaTime is in seconds.
+        io.DeltaTime = Math.Max(deltaSeconds, 1e-4f); // DeltaTime must be positive.
     }
 
     private bool TryMapKey(Key key, out ImGuiKey result)

@@ -6,7 +6,7 @@ namespace OpenSage.Rendering;
 
 internal sealed class ShaderCacheFile
 {
-    private const int Version = 1;
+    private const int Version = 2;
 
     public readonly ShaderDescription VertexShaderDescription;
     public readonly ShaderDescription FragmentShaderDescription;

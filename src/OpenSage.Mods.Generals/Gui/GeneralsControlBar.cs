@@ -746,7 +746,7 @@ public sealed class GeneralsControlBar : IControlBar
 
             var unit = player.SelectedUnits.First();
             var percent = unit.BuildProgress * 100.0f;
-            _progressText.Text = _baseText != null ? SprintfNET.StringFormatter.PrintF(_baseText, percent) : string.Empty;
+            _progressText.Text = _baseText != null ? PrintfFormatter.Format(_baseText, percent) : string.Empty;
         }
     }
 }
